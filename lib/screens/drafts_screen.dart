@@ -1,20 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:gmail_app/utils/navigateToScreen.dart';
 import '../widgets/email_list_item.dart';
 import '../models/email.dart';
 import 'compose_screen.dart';
-import 'inbox_screen.dart';
-import 'promotions_screen.dart';
-import 'social_screen.dart';
-import 'update_screen.dart';
-import 'starred_screen.dart';
-import 'snoozed_screen.dart';
-import 'important_screen.dart';
-import 'sent_screen.dart';
-import 'scheduled_screen.dart';
-import 'outbox_screen.dart';
-import 'all_mail_screen.dart';
-import 'spam_screen.dart';
-import 'trash_screen.dart';
+
 
 class DraftsScreen extends StatefulWidget {
   const DraftsScreen({super.key});
@@ -209,96 +198,7 @@ class _DraftsScreenState extends State<DraftsScreen> {
       onTap: () {
         Navigator.pop(context);
         if (title != 'Drafts') {
-          // Navigate to the appropriate screen based on the title
-          switch (title) {
-            case 'Primary':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const InboxScreen()),
-              );
-              break;
-            case 'Promotions':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const PromotionsScreen(),
-                ),
-              );
-              break;
-            case 'Social':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const SocialScreen()),
-              );
-              break;
-            case 'Update':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const UpdateScreen()),
-              );
-              break;
-            case 'Starred':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const StarredScreen()),
-              );
-              break;
-            case 'Snoozed':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const SnoozedScreen()),
-              );
-              break;
-            case 'Important':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ImportantScreen(),
-                ),
-              );
-              break;
-            case 'Sent':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const SentScreen()),
-              );
-              break;
-            case 'Scheduled':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const ScheduledScreen(),
-                ),
-              );
-              break;
-            case 'Outbox':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const OutboxScreen()),
-              );
-              break;
-            case 'All mail':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const AllMailScreen()),
-              );
-              break;
-            case 'Spam':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const SpamScreen()),
-              );
-              break;
-            case 'Trash':
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const TrashScreen()),
-              );
-              break;
-            default:
-              // For other options like Settings and Help & feedback, we'll implement later
-              break;
-          }
+          navigateToScreen(context, title);
         }
       },
     );

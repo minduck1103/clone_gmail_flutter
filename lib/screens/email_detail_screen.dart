@@ -107,8 +107,9 @@ class EmailDetailScreen extends StatelessWidget {
                                 email.isStarred
                                     ? Icons.star
                                     : Icons.star_border,
-                                color:
-                                    email.isStarred ? Colors.amber : Colors.grey,
+                                color: email.isStarred
+                                    ? Colors.amber
+                                    : Colors.grey,
                               ),
                               onPressed: () {},
                             ),
