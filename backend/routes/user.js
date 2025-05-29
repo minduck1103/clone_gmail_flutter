@@ -11,6 +11,8 @@ const {
   toggle2FA,
 } = require("../controllers/userController");
 
+const { getUserPreferences, updateUserPreferences } = require("../controllers/userPreferenceController");
+
 // Multer config
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -40,5 +42,7 @@ router.get("/account", auth, getAccount);
 router.put("/account", auth, updateAccount);
 router.post("/avatar", auth, upload.single("avatar"), uploadAvatar);
 router.put("/2fa", auth, toggle2FA);
+router.get("/preferences/:userId", auth, getUserPreferences);
+router.put("/preferences/:userId", auth, updateUserPreferences);
 
 module.exports = router;

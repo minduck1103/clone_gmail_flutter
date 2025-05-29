@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 
 const MailSchema = new mongoose.Schema(
   {
+    //recipientPhone: String,   // phone number of recipient
+    senderPhone: String,      // phone number of sender
     recipient: { type: [String], required: true },
     cc: { type: [String], default: [] },
     bcc: { type: [String], default: [] },
@@ -15,13 +17,18 @@ const MailSchema = new mongoose.Schema(
     isTrashed: { type: Boolean, default: false },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Mail',
-      default: null
+      ref: "Mail",
+      default: null,
     },
     forwardFrom: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Mail',
-      default: null
+      ref: "Mail",
+      default: null,
+    },
+    createdBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
     },
     createdAt: { type: Date, default: Date.now },
   },

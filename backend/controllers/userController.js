@@ -5,7 +5,7 @@ const fs = require("fs");
 exports.getAccount = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select("-password");
-    //const user = await User.findById("6831461be665b1eb6e30af5b");
+    //const user = await User.findById("683800d15345561749af6b8a");
     if (!user) return res.status(404).json({ message: "Cannot find user" });
     res.json(user);
   } catch (error) {
@@ -15,13 +15,13 @@ exports.getAccount = async (req, res) => {
 
 exports.updateAccount = async (req, res) => {
   try {
-    const { fullname, phone, email } = req.body;
+    const { fullname, phone } = req.body;
     const user = await User.findById(req.user.id);
     if (!user) return res.status(404).json({ message: "Cannot find user" });
 
     user.fullname = fullname || user.fullname;
     user.phone = phone || user.phone;
-    user.email = email || user.email;
+    //user.email = email || user.email;
 
     await user.save();
 

@@ -2,35 +2,51 @@ const Mail = require("../models/Mail");
 
 exports.createMail = async (req, res) => {
   try {
+    // req.user = {
+    //   id: "683800d15345561749af6b8a",
+    //   phone: "3453455678", // or any test number
+    // };
     const { recipient, cc, bcc, title, content, autoSave } = req.body;
 
     // Validate required fields
     if (!recipient || !title || !content) {
-      return res.status(400).json({ message: "Recipient, title, and content are required." });
+      return res
+        .status(400)
+        .json({ message: "Recipient, title, and content are required." });
+    }
+
+    // Check if req.user and req.user.id exist
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: "User authentication required." });
     }
 
     // Handle uploaded attachments
-    const attachments = req.files ? req.files.map(file => `/uploads/attachments/${file.filename}`) : [];
+    const attachments = req.files
+      ? req.files.map((file) => `/uploads/attachments/${file.filename}`)
+      : [];
 
     // Create new mail instance
     const newMail = new Mail({
+      senderPhone: req.user.phone, // Assuming phone is stored in req.user
       recipient: Array.isArray(recipient) ? recipient : [recipient],
       cc: cc ? [].concat(cc) : [],
       bcc: bcc ? [].concat(bcc) : [],
       title,
       content,
       attach: attachments,
-      autoSave: autoSave === "true" || autoSave === true, // Handle boolean from form-data
+      autoSave: autoSave === "true" || autoSave === true,
+      createdBy: req.user.id,
     });
 
     await newMail.save();
 
-    res.status(201).json({ message: "Mail created successfully", mail: newMail });
+    res
+      .status(201)
+      .json({ message: "Mail created successfully", mail: newMail });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 exports.getMails = async (req, res) => {
   try {
@@ -61,11 +77,15 @@ exports.updateMail = async (req, res) => {
 
     // Validate required fields
     if (!recipient || !title || !content) {
-      return res.status(400).json({ message: "Recipient, title, and content are required." });
+      return res
+        .status(400)
+        .json({ message: "Recipient, title, and content are required." });
     }
 
     // Handle uploaded attachments
-    const attachments = req.files ? req.files.map(file => `/uploads/attachments/${file.filename}`) : [];
+    const attachments = req.files
+      ? req.files.map((file) => `/uploads/attachments/${file.filename}`)
+      : [];
 
     // Update mail instance
     const updatedMail = await Mail.findByIdAndUpdate(
@@ -86,7 +106,9 @@ exports.updateMail = async (req, res) => {
       return res.status(404).json({ message: "Mail not found" });
     }
 
-    res.status(200).json({ message: "Mail updated successfully", mail: updatedMail });
+    res
+      .status(200)
+      .json({ message: "Mail updated successfully", mail: updatedMail });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
@@ -144,7 +166,7 @@ exports.moveToTrash = async (req, res) => {
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }
-}
+};
 
 //reply mail
 exports.replyMail = async (req, res) => {
@@ -153,7 +175,9 @@ exports.replyMail = async (req, res) => {
     const { content } = req.body;
 
     if (!content) {
-      return res.status(400).json({ message: "Content is required for reply." });
+      return res
+        .status(400)
+        .json({ message: "Content is required for reply." });
     }
 
     const originalMail = await Mail.findById(id);
@@ -169,12 +193,18 @@ exports.replyMail = async (req, res) => {
       content,
       autoSave: false,
       replyTo: id, // Reference to the original mail
+      createdBy: req.user.id,
+      attach: req.files
+        ? req.files.map((file) => `/uploads/attachments/${file.filename}`)
+        : [],
     });
 
     const savedReply = await replyMail.save();
 
     // Populate the replyTo field with full original mail details
-    const populatedReply = await Mail.findById(savedReply._id).populate('replyTo');
+    const populatedReply = await Mail.findById(savedReply._id).populate(
+      "replyTo"
+    );
 
     res.status(201).json({
       message: "Reply sent successfully",
@@ -185,7 +215,6 @@ exports.replyMail = async (req, res) => {
   }
 };
 
-
 // Forward mail
 exports.forwardMail = async (req, res) => {
   try {
@@ -193,7 +222,11 @@ exports.forwardMail = async (req, res) => {
     const { recipient, content } = req.body;
 
     if (!recipient || !content) {
-      return res.status(400).json({ message: "Recipient and content are required for forwarding." });
+      return res
+        .status(400)
+        .json({
+          message: "Recipient and content are required for forwarding.",
+        });
     }
 
     // Find the original mail
@@ -211,13 +244,17 @@ exports.forwardMail = async (req, res) => {
       content,
       autoSave: false,
       forwardFrom: id, // Link to original mail
+      createdBy: req.user.id,
+      attach: originalMail.attach, // Include original attachments
     });
 
     // Save the new mail
     const savedForwardMail = await forwardMail.save();
 
     // Populate the forwardFrom field with full mail info
-    const populatedMail = await Mail.findById(savedForwardMail._id).populate('forwardFrom');
+    const populatedMail = await Mail.findById(savedForwardMail._id).populate(
+      "forwardFrom"
+    );
 
     res.status(201).json({
       message: "Mail forwarded successfully",
@@ -227,7 +264,6 @@ exports.forwardMail = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
 
 // Update labels for a mail (go back later to this)
 exports.updateLabels = async (req, res) => {
@@ -249,7 +285,9 @@ exports.updateLabels = async (req, res) => {
       return res.status(404).json({ message: "Mail not found" });
     }
 
-    res.status(200).json({ message: "Labels updated successfully", mail: updatedMail });
+    res
+      .status(200)
+      .json({ message: "Labels updated successfully", mail: updatedMail });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });
   }

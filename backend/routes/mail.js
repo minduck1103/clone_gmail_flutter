@@ -13,11 +13,21 @@ const {
   toggleStarred,
   toggleRead,
   moveToTrash,
-  updateLabels,
+  //updateLabels,
   replyMail,
-  forwardMail
+  forwardMail,
+
+  // getMailByLabel,
+  // getMailBySearch,
 } = require("../controllers/mailController");
 
+const{
+  getInboxMails,
+  getSentMails,
+  getDraftMails,
+  getTrashedMails,
+  getStarredMails
+} = require("../controllers/getMailsController");
 
 // Multer config
 const storage = multer.diskStorage({
@@ -44,7 +54,7 @@ const upload = multer({
 });
 
 // Routes
-router.post("/", upload.array("attachments", 5), createMail);
+router.post("/", auth, upload.array("attachments", 5), createMail);
 router.get("/", auth, getMails);
 router.get("/:id", auth, getMailById);
 router.put("/:id", auth, upload.array("attachments", 5), updateMail);
@@ -56,6 +66,12 @@ router.patch("/:id/trash", auth, moveToTrash);
 //router.patch("/:id/labels", auth, updateLabels);
 router.post("/:id/reply", auth, upload.array("attachments", 5), replyMail);
 router.post("/:id/forward", auth, upload.array("attachments", 5), forwardMail);
+
+router.get("/user/inbox", auth, getInboxMails);
+router.get("/user/sent", auth, getSentMails);
+router.get("/user/drafts", auth, getDraftMails);
+router.get("/user/trash", auth, getTrashedMails);
+router.get("/user/starred", auth, getStarredMails);
 
 
 module.exports = router;

@@ -75,6 +75,9 @@ router.post(
 
       // Generate JWT token
       const payload = { userId: user.id };
+      // if (user.email) {
+      //   payload.email = user.email;
+      // }
       const token = jwt.sign(payload, config.jwtSecret, { expiresIn: "1h" });
       console.log("Token generated:", token);
       res.json({
@@ -189,7 +192,9 @@ router.post(
       // Check current password
       const isMatch = await bcrypt.compare(password, user.password);
       if (!isMatch) {
-        return res.status(400).json({ message: "Current password is incorrect" });
+        return res
+          .status(400)
+          .json({ message: "Current password is incorrect" });
       }
 
       const salt = await bcrypt.genSalt(32);
