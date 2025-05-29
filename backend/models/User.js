@@ -87,8 +87,8 @@ userSchema.pre('save', async function(next) {
       return next();
     }
 
-    // Ensure password exists and user is using local auth
-    if (this.password && (!this.authType || this.authType === 'local')) {
+    // Ensure password exists 
+    if (this.password) {
       //console.log('Hashing password for user:', this.email);
       const salt = await bcrypt.genSalt(8);
       const hashedPassword = await bcrypt.hash(this.password, salt);
@@ -106,10 +106,10 @@ userSchema.pre('save', async function(next) {
 userSchema.methods.comparePassword = async function(candidatePassword) {
   try {
     // Only compare if user has a password and is using local auth
-    if (!this.password || (this.authType && this.authType !== 'local')) {
-      console.log('Cannot compare password: no password set or non-local auth');
-      return false;
-    }
+    // if (!this.password || (this.authType && this.authType !== 'local')) {
+    //   console.log('Cannot compare password: no password set or non-local auth');
+    //   return false;
+    // }
 
     const isMatch = await bcrypt.compare(candidatePassword, this.password);
     //console.log('Password comparison result:', isMatch);
@@ -120,6 +120,4 @@ userSchema.methods.comparePassword = async function(candidatePassword) {
   }
 };
 
-const User = mongoose.model('User', userSchema);
-
-module.exports = User; 
+module.exports = mongoose.model('User', userSchema);

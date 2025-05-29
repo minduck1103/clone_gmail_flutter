@@ -50,6 +50,7 @@ app.use(session({
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, 'uploads');
 const profileDir = path.join(uploadsDir, 'profile');
+const attachmentsDir = path.join(uploadsDir, 'attachments');
 
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir);
@@ -58,16 +59,25 @@ if (!fs.existsSync(uploadsDir)) {
 if (!fs.existsSync(profileDir)) {
   fs.mkdirSync(profileDir);
 }
+if (!fs.existsSync(attachmentsDir)) {
+  fs.mkdirSync(attachmentsDir);
+}
 
 //Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
+app.use('/api/mail', require('./routes/mail'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: 'Something broke!' });
+  console.error("Global Error:", err.stack);
+  res.status(500).json({
+    message: 'Something broke!',
+    error: err.message || err,
+    stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
+  });
 });
+
 
 // Start server
 const PORT = config.port;
