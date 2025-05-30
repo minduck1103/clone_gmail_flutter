@@ -2,9 +2,8 @@ const mongoose = require("mongoose");
 
 const MailSchema = new mongoose.Schema(
   {
-    //recipientPhone: String,   // phone number of recipient
     senderPhone: String,      // phone number of sender
-    recipient: { type: [String], required: true },
+    recipient: { type: [String], required: true },   // phone number of recipient
     cc: { type: [String], default: [] },
     bcc: { type: [String], default: [] },
     title: { type: String, required: true },

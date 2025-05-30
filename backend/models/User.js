@@ -3,87 +3,29 @@ const bcrypt = require("bcrypt");
 
 const userSchema = new mongoose.Schema(
   {
-    // email: {
-    //   type: String,
-    //   trim: true,
-    //   lowercase: true,
-    //   default: '',
-    //   validate: {
-    //     validator: function(v) {
-    //     return v === '' || /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(v);
-    //   },
-    //   message: props => `${props.value} is not a valid email!`
-    // }
-    // },
-    fullname: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    phone: {
-      type: String,
-      trim: true,
-      required: true,
-      unique: true,
-    },
-    password: {
-      type: String,
-      required: true,
-      minlength: 6,
-    },
-    profileImage: {
-      type: String,
-      default: "",
-    },
-    // authType: {
-    //   type: String,
-    //   enum: ['local', 'admin'],
-    //   default: 'local'
-    // },
-    role: {
-      type: String,
-      enum: ["user", "admin"],
-      default: "user",
-    },
-    twoFactorEnabled: {
-      type: Boolean,
-      default: false,
-    },
+    fullname: { type: String, required: true, trim: true },
+    phone: { type: String, required: true, trim: true, unique: true },
+    password: { type: String, required: true, minlength: 6 },
+    profileImage: { type: String, default: "" },
+    role: { type: String, enum: ["user", "admin"], default: "user" },
+    twoFactorEnabled: { type: Boolean, default: false },
     resetPasswordToken: String,
     resetPasswordExpires: Date,
-    //Preferences for user settings
+    labels: { type: [String], default: [] },
+
     preferences: {
-      notifications: {
-        type: Boolean,
-        default: true,
-      },
+      notifications: { type: Boolean, default: true },
       fontSize: {
         type: String,
         enum: ["small", "medium", "large"],
         default: "medium",
       },
-      fontFamily: {
-        type: String,
-        default: "Arial",
-      },
-      theme: {
-        type: String,
-        enum: ["light", "dark"],
-        default: "light",
-      },
-      autoAnswer: {
-        type: Boolean,
-        default: false,
-      },
+      fontFamily: { type: String, default: "Arial" },
+      theme: { type: String, enum: ["light", "dark"], default: "light" },
+      autoAnswer: { type: Boolean, default: false },
     },
-    createdAt: {
-      type: Date,
-      default: Date.now,
-    },
-    updatedAt: {
-      type: Date,
-      default: Date.now,
-    },
+    createdAt: { type: Date, default: Date.now },
+    updatedAt: { type: Date, default: Date.now },
   },
   {
     timestamps: true,

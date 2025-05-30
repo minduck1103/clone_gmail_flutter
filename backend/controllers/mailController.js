@@ -265,30 +265,4 @@ exports.forwardMail = async (req, res) => {
   }
 };
 
-// Update labels for a mail (go back later to this)
-exports.updateLabels = async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { labels } = req.body;
 
-    if (!labels || !Array.isArray(labels)) {
-      return res.status(400).json({ message: "Labels must be an array." });
-    }
-
-    const updatedMail = await Mail.findByIdAndUpdate(
-      id,
-      { labels },
-      { new: true }
-    );
-
-    if (!updatedMail) {
-      return res.status(404).json({ message: "Mail not found" });
-    }
-
-    res
-      .status(200)
-      .json({ message: "Labels updated successfully", mail: updatedMail });
-  } catch (error) {
-    res.status(500).json({ message: "Server error", error: error.message });
-  }
-};

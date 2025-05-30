@@ -67,6 +67,7 @@ if (!fs.existsSync(attachmentsDir)) {
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/mail', require('./routes/mail'));
+app.use('/api/label', require('./routes/label'));
 
 // Error handling middleware
 app.use((err, req, res, next) => {

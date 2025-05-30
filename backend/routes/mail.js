@@ -13,11 +13,8 @@ const {
   toggleStarred,
   toggleRead,
   moveToTrash,
-  //updateLabels,
   replyMail,
   forwardMail,
-
-  // getMailByLabel,
   // getMailBySearch,
 } = require("../controllers/mailController");
 
