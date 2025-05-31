@@ -2,164 +2,206 @@ import 'package:flutter/material.dart';
 import '../models/email.dart';
 
 class EmailDetailScreen extends StatelessWidget {
-  final Email email;
-
-  const EmailDetailScreen({super.key, required this.email});
+  const EmailDetailScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    final email = ModalRoute.of(context)!.settings.arguments as Email;
+
     return Scaffold(
       appBar: AppBar(
+        title: const Text('Email'),
         actions: [
           IconButton(
             icon: const Icon(Icons.archive_outlined),
             onPressed: () {
-              Navigator.pop(context);
+              // TODO: Implement archive
             },
           ),
           IconButton(
             icon: const Icon(Icons.delete_outline),
             onPressed: () {
-              Navigator.pop(context);
+              // TODO: Implement delete
             },
           ),
           IconButton(
-            icon: const Icon(Icons.email_outlined),
-            onPressed: () {},
+            icon: const Icon(Icons.mail_outline),
+            onPressed: () {
+              // TODO: Implement mark as unread
+            },
           ),
-          PopupMenuButton(
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'move',
-                child: Text('Move to'),
-              ),
-              const PopupMenuItem(
-                value: 'label',
-                child: Text('Label as'),
-              ),
-              const PopupMenuItem(
-                value: 'mute',
-                child: Text('Mute'),
-              ),
-              const PopupMenuItem(
-                value: 'print',
-                child: Text('Print'),
-              ),
-              const PopupMenuItem(
-                value: 'report',
-                child: Text('Report spam'),
-              ),
-              const PopupMenuItem(
-                value: 'help',
-                child: Text('Help & feedback'),
-              ),
-            ],
+          IconButton(
+            icon: const Icon(Icons.more_vert),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (context) => Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    ListTile(
+                      leading: const Icon(Icons.reply),
+                      title: const Text('Reply'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        // TODO: Implement reply
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.reply_all),
+                      title: const Text('Reply all'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        // TODO: Implement reply all
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.forward),
+                      title: const Text('Forward'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        // TODO: Implement forward
+                      },
+                    ),
+                    ListTile(
+                      leading: const Icon(Icons.print),
+                      title: const Text('Print'),
+                      onTap: () {
+                        Navigator.pop(context);
+                        // TODO: Implement print
+                      },
+                    ),
+                  ],
+                ),
+              );
+            },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                email.subject,
-                style: const TextStyle(
-                  fontSize: 22,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
+      body: Container(
+        color: Colors.grey.shade50,
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              color: Colors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  CircleAvatar(
-                    backgroundColor: Colors.purple,
-                    child: Text(
-                      email.sender[0],
-                      style: const TextStyle(color: Colors.white),
-                    ),
+                  Text(
+                    email.subject,
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: Colors.red.shade100,
+                        child: Text(
+                          email.sender[0].toUpperCase(),
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
                               email.sender,
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                             ),
-                            const Spacer(),
                             Text(
-                              email.time,
-                              style: TextStyle(
-                                color: Colors.grey.shade600,
-                                fontSize: 14,
-                              ),
-                            ),
-                            IconButton(
-                              icon: Icon(
-                                email.isStarred
-                                    ? Icons.star
-                                    : Icons.star_border,
-                                color:
-                                    email.isStarred ? Colors.amber : Colors.grey,
-                              ),
-                              onPressed: () {},
+                              _formatTime(email.timestamp),
+                              style: Theme.of(context).textTheme.bodySmall,
                             ),
                           ],
                         ),
-                        Text(
-                          'to me',
-                          style: TextStyle(
-                            color: Colors.grey.shade600,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.reply),
+                        onPressed: () {
+                          // TODO: Implement reply
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.more_vert),
+                        onPressed: () {
+                          // TODO: Implement more options
+                        },
+                      ),
+                    ],
                   ),
                 ],
               ),
-              const SizedBox(height: 24),
-              Text(
-                'Hello,\n\n${email.preview}\n\nLorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.\n\nDuis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n\nBest regards,\n${email.sender} Team',
-                style: const TextStyle(fontSize: 16),
+            ),
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.all(16),
+                child: Text(
+                  email.content,
+                  style: Theme.of(context).textTheme.bodyLarge,
+                ),
               ),
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  top: BorderSide(color: Colors.grey.shade300),
+                ),
+              ),
+              child: Row(
                 children: [
-                  _buildActionButton(Icons.reply, 'Reply'),
-                  _buildActionButton(Icons.reply_all, 'Reply all'),
-                  _buildActionButton(Icons.forward, 'Forward'),
+                  Expanded(
+                    child: TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Reply...',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.send),
+                    onPressed: () {
+                      // TODO: Implement send reply
+                    },
+                  ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildActionButton(IconData icon, String label) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        IconButton(
-          icon: Icon(icon),
-          onPressed: () {},
-        ),
-        Text(
-          label,
-          style: const TextStyle(fontSize: 12),
-        ),
-      ],
-    );
+  String _formatTime(DateTime time) {
+    final now = DateTime.now();
+    final difference = now.difference(time);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} days ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hours ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minutes ago';
+    } else {
+      return 'Just now';
+    }
   }
 }

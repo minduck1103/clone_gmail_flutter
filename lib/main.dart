@@ -1,35 +1,34 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'screens/inbox_screen.dart';
+import 'screens/compose_screen.dart';
+import 'screens/email_detail_screen.dart';
+import 'services/email_service.dart';
 
 void main() {
-  runApp(const GmailCloneApp());
+  runApp(const MyApp());
 }
 
-class GmailCloneApp extends StatelessWidget {
-  const GmailCloneApp({super.key});
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Gmail Clone',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        colorScheme: ColorScheme.light(
-          primary: Colors.red,
-          onPrimary: Colors.white,
-          secondary: Colors.red.shade700,
+    return ChangeNotifierProvider(
+      create: (context) => EmailService(),
+      child: MaterialApp(
+        title: 'Gmail Clone',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: true,
         ),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.black,
-          elevation: 1,
-        ),
-        floatingActionButtonTheme: FloatingActionButtonThemeData(
-          backgroundColor: Colors.white,
-          foregroundColor: Colors.grey.shade700,
-        ),
+        initialRoute: '/',
+        routes: {
+          '/': (context) => const InboxScreen(),
+          '/compose': (context) => const ComposeScreen(),
+          '/email': (context) => const EmailDetailScreen(),
+        },
       ),
-      home: const InboxScreen(),
     );
   }
 }
