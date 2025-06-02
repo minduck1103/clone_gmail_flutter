@@ -14,6 +14,7 @@ const MailSchema = new mongoose.Schema(
     isStarred: { type: Boolean, default: false },
     labels: { type: [String], default: [] },
     isTrashed: { type: Boolean, default: false },
+    isAutoReply: { type: Boolean, default: false },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Mail",
