@@ -1,10 +1,11 @@
 const Mail = require("../models/Mail");
+const User = require("../models/User");
 
 exports.createMail = async (req, res) => {
   try {
     // req.user = {
-    //   id: "683800d15345561749af6b8a",
-    //   phone: "3453455678", // or any test number
+    //   id: "68303019f9614c4478acabc6",
+    //   phone: "111111111", // or any test number
     // };
     const { recipient, cc, bcc, title, content, autoSave } = req.body;
 
@@ -39,6 +40,26 @@ exports.createMail = async (req, res) => {
     });
 
     await newMail.save();
+
+    // Check for auto-reply settings in recipients
+    const recipientsArray = Array.isArray(recipient) ? recipient : [recipient];
+
+    const usersToAutoReply = await User.find({
+      phone: { $in: recipientsArray },
+      "preferences.autoAnswer": true,
+    });
+
+    for (const user of usersToAutoReply) {
+      const autoReply = new Mail({
+        senderPhone: user.phone, // Auto-responder is the recipient
+        recipient: [req.user.phone], // Send back to original sender
+        title: `Re: ${title}`,
+        content: user.preferences?.autoAnswerMessage || "I'm currently unavailable.",
+        createdBy: user._id,
+        replyTo: newMail._id,
+      });
+      await autoReply.save();
+    }
 
     res
       .status(201)
@@ -222,11 +243,9 @@ exports.forwardMail = async (req, res) => {
     const { recipient, content } = req.body;
 
     if (!recipient || !content) {
-      return res
-        .status(400)
-        .json({
-          message: "Recipient and content are required for forwarding.",
-        });
+      return res.status(400).json({
+        message: "Recipient and content are required for forwarding.",
+      });
     }
 
     // Find the original mail
@@ -264,5 +283,3 @@ exports.forwardMail = async (req, res) => {
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
-
-
