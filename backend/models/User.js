@@ -23,6 +23,7 @@ const userSchema = new mongoose.Schema(
       fontFamily: { type: String, default: "Arial" },
       theme: { type: String, enum: ["light", "dark"], default: "light" },
       autoAnswer: { type: Boolean, default: false },
+      autoAnswerMessage: { type: String, default: "Thank you for your message. I will get back to you soon." },
     },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
