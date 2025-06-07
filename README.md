@@ -128,7 +128,7 @@ sudo systemctl enable mongod
 
 ### 1. Clone repository
 ```bash
-git clone <repository-url>
+git clone <https://github.com/minduck1103/clone_gmail_flutter.git>
 cd clone_gmail_flutter
 ```
 
@@ -381,23 +381,6 @@ flutter clean
 flutter pub get
 flutter pub upgrade
 ```
-
-## 🤝 Đóng góp
-
-1. Fork repository
-2. Tạo feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to branch (`git push origin feature/AmazingFeature`)
-5. Mở Pull Request
-
-## 📄 License
-
-Dự án này được phân phối dưới **MIT License**. Xem file `LICENSE` để biết thêm chi tiết.
-
-## 👨‍💻 Tác giả
-
-- **Developer** - [Your Name](https://github.com/yourusername)
-- **Email** - your.email@example.com
 
 ## 🙏 Cảm ơn
 
