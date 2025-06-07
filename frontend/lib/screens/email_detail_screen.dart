@@ -1,188 +1,136 @@
 import 'package:flutter/material.dart';
-import '../models/email.dart';
+import 'package:provider/provider.dart';
+import '../models/mail.dart';
+import '../services/email_service.dart';
+import 'compose_screen.dart';
 
 class EmailDetailScreen extends StatelessWidget {
-  const EmailDetailScreen({super.key});
+  final Mail mail;
+
+  const EmailDetailScreen({
+    super.key,
+    required this.mail,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final email = ModalRoute.of(context)!.settings.arguments as Email;
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Email'),
+        title: Text(mail.title),
         actions: [
           IconButton(
-            icon: const Icon(Icons.archive_outlined),
-            onPressed: () {
-              // TODO: Implement archive
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.delete_outline),
-            onPressed: () {
-              // TODO: Implement delete
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.mail_outline),
-            onPressed: () {
-              // TODO: Implement mark as unread
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (context) => Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    ListTile(
-                      leading: const Icon(Icons.reply),
-                      title: const Text('Reply'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        // TODO: Implement reply
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.reply_all),
-                      title: const Text('Reply all'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        // TODO: Implement reply all
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.forward),
-                      title: const Text('Forward'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        // TODO: Implement forward
-                      },
-                    ),
-                    ListTile(
-                      leading: const Icon(Icons.print),
-                      title: const Text('Print'),
-                      onTap: () {
-                        Navigator.pop(context);
-                        // TODO: Implement print
-                      },
-                    ),
-                  ],
-                ),
-              );
-            },
+            icon: const Icon(Icons.delete),
+            onPressed: () => _showMoveToTrashDialog(context),
           ),
         ],
       ),
-      body: Container(
-        color: Colors.grey.shade50,
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              color: Colors.white,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
                 children: [
-                  Text(
-                    email.subject,
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                  CircleAvatar(
+                    backgroundColor: Colors.grey[200],
+                    child: Text(mail.senderPhone[0].toUpperCase()),
                   ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: Colors.red.shade100,
-                        child: Text(
-                          email.sender[0].toUpperCase(),
-                          style: TextStyle(color: Colors.red.shade700),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              email.sender,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                            ),
-                            Text(
-                              _formatTime(email.timestamp),
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.reply),
-                        onPressed: () {
-                          // TODO: Implement reply
-                        },
-                      ),
-                      IconButton(
-                        icon: const Icon(Icons.more_vert),
-                        onPressed: () {
-                          // TODO: Implement more options
-                        },
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(16),
-                child: Text(
-                  email.content,
-                  style: Theme.of(context).textTheme.bodyLarge,
-                ),
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                border: Border(
-                  top: BorderSide(color: Colors.grey.shade300),
-                ),
-              ),
-              child: Row(
-                children: [
+                  const SizedBox(width: 16),
                   Expanded(
-                    child: TextField(
-                      decoration: InputDecoration(
-                        hintText: 'Reply...',
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          mail.senderPhone,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
+                        Text(
+                          'To: ${mail.recipient.join(", ")}',
+                          style: const TextStyle(
+                            color: Colors.grey,
+                          ),
                         ),
-                      ),
+                      ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.send),
-                    onPressed: () {
-                      // TODO: Implement send reply
-                    },
+                  Text(
+                    _formatDate(mail.createdAt),
+                    style: const TextStyle(
+                      color: Colors.grey,
+                    ),
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              Text(
+                mail.title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                mail.content,
+                style: const TextStyle(fontSize: 16),
+              ),
+              if (mail.attach.isNotEmpty) ...[
+                const SizedBox(height: 16),
+                const Text(
+                  'Attachments:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: mail.attach
+                      .map((attachment) => Chip(
+                            avatar: const Icon(Icons.attachment, size: 20),
+                            label: Text(attachment.split('/').last),
+                          ))
+                      .toList(),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+      bottomNavigationBar: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border(
+            top: BorderSide(color: Colors.grey.shade300),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            _buildActionButton(
+              context,
+              icon: Icons.reply,
+              label: 'Trả lời',
+              onPressed: () => _handleReply(context),
+            ),
+            _buildActionButton(
+              context,
+              icon: Icons.reply_all,
+              label: 'Trả lời tất cả',
+              onPressed: () => _handleReplyAll(context),
+            ),
+            _buildActionButton(
+              context,
+              icon: Icons.forward,
+              label: 'Chuyển tiếp',
+              onPressed: () => _handleForward(context),
             ),
           ],
         ),
@@ -190,18 +138,118 @@ class EmailDetailScreen extends StatelessWidget {
     );
   }
 
-  String _formatTime(DateTime time) {
-    final now = DateTime.now();
-    final difference = now.difference(time);
+  void _showMoveToTrashDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Chuyển vào thùng rác'),
+          content:
+              const Text('Bạn có chắc muốn chuyển email này vào thùng rác?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Hủy'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
 
-    if (difference.inDays > 0) {
-      return '${difference.inDays} days ago';
-    } else if (difference.inHours > 0) {
-      return '${difference.inHours} hours ago';
-    } else if (difference.inMinutes > 0) {
-      return '${difference.inMinutes} minutes ago';
-    } else {
-      return 'Just now';
-    }
+                final emailService = context.read<EmailService>();
+                await emailService.moveToTrash(mail.id);
+
+                if (context.mounted) {
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Đã chuyển email vào thùng rác'),
+                      backgroundColor: Colors.green,
+                      duration: Duration(seconds: 2),
+                    ),
+                  );
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Chuyển vào thùng rác',
+                  style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildActionButton(
+    BuildContext context, {
+    required IconData icon,
+    required String label,
+    required VoidCallback onPressed,
+  }) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        ElevatedButton(
+          onPressed: onPressed,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          ),
+          child: Icon(icon, size: 20),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 12,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _handleReply(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ComposeScreen(
+          replyToEmail: mail,
+          isReply: true,
+        ),
+      ),
+    );
+  }
+
+  void _handleReplyAll(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ComposeScreen(
+          replyToEmail: mail,
+          isReply: true,
+          isReplyAll: true,
+        ),
+      ),
+    );
+  }
+
+  void _handleForward(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ComposeScreen(
+          replyToEmail: mail,
+          isForward: true,
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 }

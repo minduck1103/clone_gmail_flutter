@@ -21,11 +21,18 @@ exports.getInboxMails = async (req, res) => {
 // Get Starred mails
 exports.getStarredMails = async (req, res) => {
   try {
+    const userPhone = req.user.phone;
+    
+    // Lấy tất cả mail có isStarred = true mà user có liên quan
     const mails = await Mail.find({
-      createdBy: req.user.id,
+      $or: [
+        { senderPhone: userPhone },
+        { recipient: userPhone }
+      ],
       isStarred: true,
       isTrashed: false,
     }).sort({ createdAt: -1 });
+    
     if (!mails || mails.length === 0) {
       return res.status(404).json({ message: "No starred mails found" });
     }
@@ -39,7 +46,7 @@ exports.getStarredMails = async (req, res) => {
 exports.getSentMails = async (req, res) => {
   try {
     const mails = await Mail.find({
-      createdBy: req.user.id,
+      createdBy: req.user._id,
       autoSave: false,
       isTrashed: false,
     }).sort({ createdAt: -1 });
@@ -56,7 +63,7 @@ exports.getSentMails = async (req, res) => {
 exports.getDraftMails = async (req, res) => {
   try {
     const mails = await Mail.find({
-      createdBy: req.user.id,
+      createdBy: req.user._id,
       autoSave: true,
       isTrashed: false,
     }).sort({ createdAt: -1 });
@@ -73,7 +80,7 @@ exports.getDraftMails = async (req, res) => {
 exports.getTrashedMails = async (req, res) => {
   try {
     const mails = await Mail.find({
-      createdBy: req.user.id,
+      createdBy: req.user._id,
       isTrashed: true,
     }).sort({ createdAt: -1 });
     if (!mails || mails.length === 0) {
@@ -81,6 +88,25 @@ exports.getTrashedMails = async (req, res) => {
     }
     res.status(200).json(mails);
   } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+exports.getAllMails = async (req, res) => {
+  try {
+    const userPhone = req.user.phone;
+    
+    // Lấy tất cả mail mà user là sender hoặc recipient
+    const allMails = await Mail.find({
+      $or: [
+        { senderPhone: userPhone },
+        { recipient: userPhone }
+      ]
+    }).sort({ createdAt: -1 });
+
+    res.status(200).json(allMails);
+  } catch (error) {
+    console.error("Error fetching all mails:", error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };

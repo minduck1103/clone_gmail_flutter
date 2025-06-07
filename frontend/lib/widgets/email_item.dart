@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
-import '../models/email.dart';
+import '../models/mail.dart';
 
 class EmailItem extends StatelessWidget {
-  final Email email;
+  final Mail email;
   final VoidCallback onTap;
   final VoidCallback onStar;
+  final VoidCallback? onLongPress;
   final bool isSelected;
 
   const EmailItem({
@@ -12,71 +13,79 @@ class EmailItem extends StatelessWidget {
     required this.email,
     required this.onTap,
     required this.onStar,
+    this.onLongPress,
     this.isSelected = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.grey[200],
-        child: Text(
-          email.sender[0].toUpperCase(),
-          style: const TextStyle(color: Colors.black),
+    return GestureDetector(
+      onLongPress: onLongPress,
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: Colors.grey[200],
+          child: Text(
+            email.senderPhone[0].toUpperCase(),
+            style: const TextStyle(color: Colors.black),
+          ),
         ),
-      ),
-      title: Row(
-        children: [
-          Expanded(
-            child: Text(
-              email.sender,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
+        title: Row(
+          children: [
+            Expanded(
+              child: Text(
+                email.senderPhone,
+                style: TextStyle(
+                  fontWeight:
+                      email.isRead ? FontWeight.normal : FontWeight.bold,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+            Text(
+              _formatTime(email.createdAt),
+              style: TextStyle(
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+        subtitle: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              email.title,
+              style: TextStyle(
+                fontWeight: email.isRead ? FontWeight.normal : FontWeight.w500,
+                color: email.isRead ? Colors.grey[600] : Colors.black87,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-          Text(
-            _formatTime(email.timestamp),
-            style: TextStyle(
-              color: Colors.grey[600],
-              fontSize: 12,
+            Text(
+              email.content,
+              style: TextStyle(
+                color: Colors.grey[600],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
-      ),
-      subtitle: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            email.subject,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-          Text(
-            email.content,
-            style: TextStyle(
-              color: Colors.grey[600],
-            ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
-      ),
-      trailing: IconButton(
-        icon: Icon(
-          email.isStarred ? Icons.star : Icons.star_border,
-          color: email.isStarred ? Colors.amber : Colors.grey,
+            if (email.attach.isNotEmpty)
+              const Icon(Icons.attachment, size: 16, color: Colors.grey),
+          ],
         ),
-        onPressed: onStar,
+        trailing: IconButton(
+          icon: Icon(
+            email.isStarred ? Icons.star : Icons.star_border,
+            color: email.isStarred ? Colors.amber : Colors.grey,
+          ),
+          onPressed: onStar,
+        ),
+        selected: isSelected,
+        selectedTileColor: Colors.grey[200],
+        onTap: onTap,
       ),
-      selected: isSelected,
-      selectedTileColor: Colors.grey[200],
-      onTap: onTap,
     );
   }
 

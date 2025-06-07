@@ -4,7 +4,7 @@ const fs = require("fs");
 
 exports.getAccount = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    const user = await User.findById(req.user._id).select("-password");
     //const user = await User.findById("683800d15345561749af6b8a");
     if (!user) return res.status(404).json({ message: "Cannot find user" });
     res.json(user);
@@ -16,7 +16,7 @@ exports.getAccount = async (req, res) => {
 exports.updateAccount = async (req, res) => {
   try {
     const { fullname, phone } = req.body;
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "Cannot find user" });
 
     user.fullname = fullname || user.fullname;
@@ -25,7 +25,7 @@ exports.updateAccount = async (req, res) => {
 
     await user.save();
 
-    const updatedUser = await User.findById(user.id).select("-password");
+    const updatedUser = await User.findById(user._id).select("-password");
     res.json({ user: updatedUser, message: "User updated successfully" });
   } catch (error) {
     res.status(500).json({ message: "Server error" });
@@ -34,7 +34,7 @@ exports.updateAccount = async (req, res) => {
 
 exports.uploadAvatar = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "Cannot find user" });
 
     // Delete old avatar if exists
@@ -56,7 +56,7 @@ exports.uploadAvatar = async (req, res) => {
 
 exports.toggle2FA = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user._id);
     if (!user) return res.status(404).json({ message: "Cannot find user" });
 
     user.twoFactorEnabled = !user.twoFactorEnabled;

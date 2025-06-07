@@ -66,7 +66,7 @@ router.post(
       }
 
       // Check password
-      const isMatch = await bcrypt.compare(password, user.password);
+      const isMatch = await user.comparePassword(password);
       if (!isMatch) {
         return res
           .status(400)
@@ -183,7 +183,7 @@ router.post(
         return res.status(400).json({ errors: errors.array() });
       }
       const { password, newPassword } = req.body;
-      const user = await User.findById(req.user.id);
+      const user = await User.findById(req.user._id);
 
       if (!user) {
         return res.status(400).json({ message: "User not found" });

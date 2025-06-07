@@ -16,8 +16,8 @@ exports.createMail = async (req, res) => {
         .json({ message: "Recipient, title, and content are required." });
     }
 
-    // Check if req.user and req.user.id exist
-    if (!req.user || !req.user.id) {
+    // Check if req.user and req.user._id exist
+    if (!req.user || !req.user._id) {
       return res.status(401).json({ message: "User authentication required." });
     }
 
@@ -36,7 +36,7 @@ exports.createMail = async (req, res) => {
       content,
       attach: attachments,
       autoSave: autoSave === "true" || autoSave === true,
-      createdBy: req.user.id,
+      createdBy: req.user._id,
     });
 
     await newMail.save();
@@ -214,7 +214,7 @@ exports.replyMail = async (req, res) => {
       content,
       autoSave: false,
       replyTo: id, // Reference to the original mail
-      createdBy: req.user.id,
+      createdBy: req.user._id,
       attach: req.files
         ? req.files.map((file) => `/uploads/attachments/${file.filename}`)
         : [],
@@ -263,7 +263,7 @@ exports.forwardMail = async (req, res) => {
       content,
       autoSave: false,
       forwardFrom: id, // Link to original mail
-      createdBy: req.user.id,
+      createdBy: req.user._id,
       attach: originalMail.attach, // Include original attachments
     });
 

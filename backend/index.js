@@ -32,7 +32,7 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cors({
-  origin: config.clientURL,
+  origin: '*',
   credentials: true
 }));
 
@@ -82,7 +82,7 @@ app.use((err, req, res, next) => {
 
 // Start server
 const PORT = config.port;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
   console.log(`Server is running on port ${PORT}`);
 });
 

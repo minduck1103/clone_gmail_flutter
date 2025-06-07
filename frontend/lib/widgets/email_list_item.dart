@@ -34,7 +34,6 @@ class EmailListItem extends StatelessWidget {
             action: SnackBarAction(
               label: 'UNDO',
               onPressed: () {
-                // TODO: Implement undo functionality
               },
             ),
           ),
@@ -81,13 +80,18 @@ class EmailListItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: email.isRead ? Colors.grey : Colors.black87,
+                fontWeight: email.isRead ? FontWeight.normal : FontWeight.bold,
               ),
             ),
             Text(
-              email.status!,
-              style: TextStyle(
+              email.content.length > 50
+                  ? '${email.content.substring(0, 50)}...'
+                  : email.content,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
                 fontSize: 12,
-                color: _getStatusColor(email.status!),
+                color: Colors.grey,
               ),
             ),
           ],
@@ -96,7 +100,8 @@ class EmailListItem extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Text(_formatDate(email.date), style: const TextStyle(fontSize: 12)),
+            Text(_formatDate(email.timestamp),
+                style: const TextStyle(fontSize: 12)),
             if (!email.isRead)
               Container(
                 margin: const EdgeInsets.only(top: 4),

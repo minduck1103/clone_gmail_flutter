@@ -1,6 +1,6 @@
 const jwt = require('jsonwebtoken');
 const config = require('../config/main');
-//const User = require('../models/User');
+const User = require('../models/User');
 
 module.exports = async function(req, res, next) {
   // Get token from header
@@ -19,13 +19,14 @@ module.exports = async function(req, res, next) {
   const token = authHeader.split(' ')[1];
   
   try {
-    // Verify token
+    console.log('Token received:', token);
     const decoded = jwt.verify(token, config.jwtSecret);
-    const user = await User.findById(decoded.user.id);
+    const user = await User.findById(decoded.userId);
     if (!user) return res.status(401).json({ message: 'Unauthorized' });
     req.user = user;
     next();
   } catch (err) {
+    console.log('JWT verify error:', err.message);
     res.status(401).json({ message: 'Invalid or expired token' });
   }
 }; 
