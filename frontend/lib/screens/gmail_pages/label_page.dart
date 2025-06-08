@@ -4,15 +4,17 @@ import '../../widgets/email_item.dart';
 import '../../widgets/empty_state.dart';
 import '../../widgets/email_action_bottom_sheet.dart';
 
-class PrimaryPage extends StatelessWidget {
+class LabelPage extends StatelessWidget {
   final List<Mail> emails;
+  final String labelName;
   final Function(Mail) onEmailTap;
   final Function(Mail) onStarEmail;
   final String? error;
 
-  const PrimaryPage({
+  const LabelPage({
     super.key,
     required this.emails,
+    required this.labelName,
     required this.onEmailTap,
     required this.onStarEmail,
     this.error,
@@ -42,9 +44,9 @@ class PrimaryPage extends StatelessWidget {
             const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Text(
+              child: Text(
                 error!,
-          textAlign: TextAlign.center,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.red.shade500,
@@ -57,20 +59,25 @@ class PrimaryPage extends StatelessWidget {
       );
     }
 
-    if (emails.isEmpty) {
-      return const EmptyState(
-        icon: Icons.inbox,
-        title: 'Hộp thư trống',
+    // Filter emails by label
+    final filteredEmails = emails.where((email) {
+      return email.labels != null && email.labels!.contains(labelName);
+    }).toList();
+
+    if (filteredEmails.isEmpty) {
+      return EmptyState(
+        icon: _getLabelIcon(labelName),
+        title: 'Không có email nào',
         message:
-            'Bạn chưa có email nào trong hộp thư chính.\nHãy kiểm tra lại sau.',
+            'Chưa có email nào với nhãn "$labelName".\nHãy kiểm tra lại sau.',
       );
     }
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(vertical: 8),
-      itemCount: emails.length,
+      itemCount: filteredEmails.length,
       itemBuilder: (context, index) {
-        final email = emails[index];
+        final email = filteredEmails[index];
         return EmailItem(
           email: email,
           onTap: () => onEmailTap(email),
@@ -79,5 +86,32 @@ class PrimaryPage extends StatelessWidget {
         );
       },
     );
+  }
+
+  IconData _getLabelIcon(String label) {
+    switch (label) {
+      case 'Có gắn dấu sao':
+        return Icons.star;
+      case 'Đã tạm ẩn':
+        return Icons.snooze;
+      case 'Quan trọng':
+        return Icons.label_important;
+      case 'Đã gửi':
+        return Icons.send;
+      case 'Đã lên lịch':
+        return Icons.schedule_send;
+      case 'Hộp thư đi':
+        return Icons.outbox;
+      case 'Thư nháp':
+        return Icons.drafts;
+      case 'Thùng rác':
+        return Icons.delete;
+      case 'Spam':
+        return Icons.report;
+      case 'Tất cả thư':
+        return Icons.mail;
+      default:
+        return Icons.label;
+    }
   }
 }

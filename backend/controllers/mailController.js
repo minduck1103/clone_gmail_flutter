@@ -50,15 +50,26 @@ exports.createMail = async (req, res) => {
     });
 
     for (const user of usersToAutoReply) {
+      // Always send auto reply for testing
       const autoReply = new Mail({
         senderPhone: user.phone, // Auto-responder is the recipient
         recipient: [req.user.phone], // Send back to original sender
         title: `Re: ${title}`,
-        content: user.preferences?.autoAnswerMessage || "I'm currently unavailable.",
+        content: user.preferences?.autoAnswerMessage || "Cảm ơn bạn đã gửi tin nhắn. Tôi sẽ phản hồi bạn sớm nhất có thể.",
+        isAutoReply: true,
         createdBy: user._id,
         replyTo: newMail._id,
       });
       await autoReply.save();
+      console.log(`Auto reply sent from ${user.phone} to ${req.user.phone}`);
+      
+      // Log for debugging
+      console.log(`Auto reply created:`, {
+        from: user.phone,
+        to: req.user.phone,
+        title: `Re: ${title}`,
+        id: autoReply._id
+      });
     }
 
     res
@@ -278,6 +289,35 @@ exports.forwardMail = async (req, res) => {
     res.status(201).json({
       message: "Mail forwarded successfully",
       mail: populatedMail,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Server error", error: error.message });
+  }
+};
+
+// Update mail labels
+exports.updateLabels = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { labels } = req.body;
+
+    if (!Array.isArray(labels)) {
+      return res.status(400).json({ message: "Labels must be an array" });
+    }
+
+    const mail = await Mail.findByIdAndUpdate(
+      id,
+      { labels },
+      { new: true }
+    );
+
+    if (!mail) {
+      return res.status(404).json({ message: "Mail not found" });
+    }
+
+    res.status(200).json({ 
+      message: "Labels updated successfully",
+      mail: mail 
     });
   } catch (error) {
     res.status(500).json({ message: "Server error", error: error.message });

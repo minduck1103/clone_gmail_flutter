@@ -10,14 +10,17 @@ class ChangePasswordScreen extends StatefulWidget {
 
 class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _currentPasswordController = TextEditingController();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   bool _isLoading = false;
+  bool _showCurrentPassword = false;
   bool _showNewPassword = false;
   bool _showConfirmPassword = false;
 
   @override
   void dispose() {
+    _currentPasswordController.dispose();
     _newPasswordController.dispose();
     _confirmPasswordController.dispose();
     super.dispose();
@@ -31,8 +34,10 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
     });
 
     try {
-      final response =
-          await ApiService.updatePassword(_newPasswordController.text.trim());
+      final response = await ApiService.updatePassword(
+        _currentPasswordController.text.trim(),
+        _newPasswordController.text.trim(),
+      );
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -126,6 +131,42 @@ class _ChangePasswordScreenState extends State<ChangePasswordScreen> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 32),
+
+              // Current Password
+              const Text(
+                'Mật khẩu hiện tại',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextFormField(
+                controller: _currentPasswordController,
+                obscureText: !_showCurrentPassword,
+                decoration: InputDecoration(
+                  labelText: 'Mật khẩu hiện tại',
+                  prefixIcon: const Icon(Icons.lock_outline),
+                  suffixIcon: IconButton(
+                    icon: Icon(_showCurrentPassword
+                        ? Icons.visibility_off
+                        : Icons.visibility),
+                    onPressed: () => setState(
+                        () => _showCurrentPassword = !_showCurrentPassword),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Vui lòng nhập mật khẩu hiện tại';
+                  }
+                  return null;
+                },
+              ),
+              const SizedBox(height: 20),
 
               // New Password
               const Text(

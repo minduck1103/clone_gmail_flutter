@@ -8,19 +8,205 @@ class EmailService extends ChangeNotifier {
   String? _error;
   String? _currentPage;
 
+  // Mail counts for different categories
+  int _inboxCount = 0;
+  int _sentCount = 0;
+  int _draftCount = 0;
+  int _starredCount = 0;
+  int _trashCount = 0;
+  int _allMailCount = 0;
+  int _promotionsCount = 0;
+  int _socialCount = 0;
+  int _updatesCount = 0;
+  int _importantCount = 0;
+  int _snoozedCount = 0;
+  int _scheduledCount = 0;
+  int _outboxCount = 0;
+  int _spamCount = 0;
+
   List<Mail> get emails => List.unmodifiable(_emails);
   bool get isLoading => _isLoading;
   String? get error => _error;
   String? get currentPage => _currentPage;
 
+  // Getters for mail counts
+  int get inboxCount => _inboxCount;
+  int get sentCount => _sentCount;
+  int get draftCount => _draftCount;
+  int get starredCount => _starredCount;
+  int get trashCount => _trashCount;
+  int get allMailCount => _allMailCount;
+  int get promotionsCount => _promotionsCount;
+  int get socialCount => _socialCount;
+  int get updatesCount => _updatesCount;
+  int get importantCount => _importantCount;
+  int get snoozedCount => _snoozedCount;
+  int get scheduledCount => _scheduledCount;
+  int get outboxCount => _outboxCount;
+  int get spamCount => _spamCount;
+
+  // Method to fetch all mail counts
+  Future<void> fetchAllMailCounts() async {
+    try {
+      // Fetch counts for each category in parallel
+      await Future.wait([
+        _fetchInboxCount(),
+        _fetchSentCount(),
+        _fetchDraftCount(),
+        _fetchStarredCount(),
+        _fetchTrashCount(),
+        _fetchAllMailCount(),
+        // Add other counts as needed
+      ]);
+      notifyListeners();
+    } catch (e) {
+      print('Error fetching mail counts: $e');
+    }
+  }
+
+  Future<void> _fetchInboxCount() async {
+    try {
+      final response = await ApiService.getInboxMails();
+      _inboxCount = response is List ? response.length : 0;
+    } catch (e) {
+      _inboxCount = 0;
+    }
+  }
+
+  Future<void> _fetchSentCount() async {
+    try {
+      final response = await ApiService.getSentMails();
+      _sentCount = response is List ? response.length : 0;
+    } catch (e) {
+      _sentCount = 0;
+    }
+  }
+
+  Future<void> _fetchDraftCount() async {
+    try {
+      final response = await ApiService.getDraftMails();
+      _draftCount = response is List ? response.length : 0;
+    } catch (e) {
+      _draftCount = 0;
+    }
+  }
+
+  Future<void> _fetchStarredCount() async {
+    try {
+      final response = await ApiService.getStarredMails();
+      _starredCount = response is List ? response.length : 0;
+    } catch (e) {
+      _starredCount = 0;
+    }
+  }
+
+  Future<void> _fetchTrashCount() async {
+    try {
+      final response = await ApiService.getTrashedMails();
+      _trashCount = response is List ? response.length : 0;
+    } catch (e) {
+      _trashCount = 0;
+    }
+  }
+
+  Future<void> _fetchAllMailCount() async {
+    try {
+      final response = await ApiService.getAllMails();
+      _allMailCount = response is List ? response.length : 0;
+    } catch (e) {
+      _allMailCount = 0;
+    }
+  }
+
   void addEmail(Mail email) {
     _emails.insert(0, email);
+    // Update count based on current page
+    switch (_currentPage) {
+      case 'inbox':
+        _inboxCount++;
+        break;
+      case 'sent':
+        _sentCount++;
+        break;
+      case 'drafts':
+        _draftCount++;
+        break;
+      case 'starred':
+        _starredCount++;
+        break;
+      case 'trash':
+        _trashCount++;
+        break;
+      case 'all':
+        _allMailCount++;
+        break;
+    }
     notifyListeners();
   }
 
   void deleteEmail(String id) {
     _emails.removeWhere((email) => email.id == id);
+    // Update count based on current page
+    switch (_currentPage) {
+      case 'inbox':
+        _inboxCount = (_inboxCount - 1).clamp(0, double.infinity).toInt();
+        break;
+      case 'sent':
+        _sentCount = (_sentCount - 1).clamp(0, double.infinity).toInt();
+        break;
+      case 'drafts':
+        _draftCount = (_draftCount - 1).clamp(0, double.infinity).toInt();
+        break;
+      case 'starred':
+        _starredCount = (_starredCount - 1).clamp(0, double.infinity).toInt();
+        break;
+      case 'trash':
+        _trashCount = (_trashCount - 1).clamp(0, double.infinity).toInt();
+        break;
+      case 'all':
+        _allMailCount = (_allMailCount - 1).clamp(0, double.infinity).toInt();
+        break;
+    }
     notifyListeners();
+  }
+
+  void clearEmails() {
+    _emails.clear();
+    _error = null;
+    notifyListeners();
+  }
+
+  Future<void> fetchMailsByLabel(String label) async {
+    _isLoading = true;
+    _error = null;
+    _currentPage = 'label_$label';
+    notifyListeners();
+
+    try {
+      final response = await ApiService.getMailsByLabel(label);
+      print('Raw response for label $label: ${response}');
+
+      if (response is List) {
+        final List<Mail> mappedEmails = response.map((json) {
+          if (json is Map<String, dynamic>) {
+            return Mail.fromJson(json);
+          }
+          throw Exception('Invalid mail data format');
+        }).toList();
+
+        _emails.clear();
+        _emails.addAll(mappedEmails);
+        print('Processed emails with label $label: ${_emails.length}');
+      } else {
+        _error = 'Invalid response format';
+      }
+    } catch (e) {
+      print('Error fetching mails by label $label: $e');
+      _error = e.toString();
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   Future<void> fetchInboxMails() async {
@@ -43,6 +229,7 @@ class EmailService extends ChangeNotifier {
 
         _emails.clear();
         _emails.addAll(mappedEmails);
+        _inboxCount = mappedEmails.length;
         print('Processed emails: ${_emails.length}');
       } else {
         _error = 'Invalid response format';
@@ -76,6 +263,7 @@ class EmailService extends ChangeNotifier {
 
         _emails.clear();
         _emails.addAll(mappedEmails);
+        _sentCount = mappedEmails.length;
         print('Processed sent emails: ${_emails.length}');
       } else {
         _error = 'Invalid response format';
@@ -109,6 +297,7 @@ class EmailService extends ChangeNotifier {
 
         _emails.clear();
         _emails.addAll(mappedEmails);
+        _draftCount = mappedEmails.length;
         print('Processed draft emails: ${_emails.length}');
       } else {
         _error = 'Invalid response format';
@@ -142,6 +331,7 @@ class EmailService extends ChangeNotifier {
 
         _emails.clear();
         _emails.addAll(mappedEmails);
+        _trashCount = mappedEmails.length;
         print('Processed trash emails: ${_emails.length}');
       } else {
         _error = 'Invalid response format';
@@ -174,6 +364,7 @@ class EmailService extends ChangeNotifier {
 
         _emails.clear();
         _emails.addAll(mappedEmails);
+        _starredCount = mappedEmails.length;
         print('Processed starred emails: ${_emails.length}');
       } else {
         _error = 'Invalid response format';
@@ -207,6 +398,7 @@ class EmailService extends ChangeNotifier {
 
         _emails.clear();
         _emails.addAll(mappedEmails);
+        _allMailCount = mappedEmails.length;
         print('Processed all emails: ${_emails.length}');
       } else {
         _error = 'Invalid response format';
@@ -369,6 +561,34 @@ class EmailService extends ChangeNotifier {
       _error = e.toString();
       notifyListeners();
       rethrow;
+    }
+  }
+
+  Future<void> updateLabels(String id, List<String> labels) async {
+    try {
+      final index = _emails.indexWhere((email) => email.id == id);
+      if (index != -1) {
+        final currentEmail = _emails[index];
+
+        // Optimistically update UI
+        _emails[index] = currentEmail.copyWith(labels: labels);
+        notifyListeners();
+
+        // Call API to update backend
+        await ApiService.updateLabels(id, labels);
+        print('Successfully updated labels for email $id: $labels');
+      }
+    } catch (e) {
+      print('Error updating labels: $e');
+      // Revert the optimistic update on error
+      final index = _emails.indexWhere((email) => email.id == id);
+      if (index != -1) {
+        final currentEmail = _emails[index];
+        _emails[index] = currentEmail.copyWith(labels: currentEmail.labels);
+        notifyListeners();
+      }
+      _error = e.toString();
+      notifyListeners();
     }
   }
 }

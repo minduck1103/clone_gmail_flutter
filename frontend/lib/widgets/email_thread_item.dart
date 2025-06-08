@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
+import '../models/email_thread.dart';
 import '../models/mail.dart';
 
-class EmailItem extends StatelessWidget {
-  final Mail email;
+class EmailThreadItem extends StatelessWidget {
+  final EmailThread thread;
   final VoidCallback onTap;
   final VoidCallback onStar;
   final VoidCallback? onLongPress;
   final bool isSelected;
 
-  const EmailItem({
+  const EmailThreadItem({
     super.key,
-    required this.email,
+    required this.thread,
     required this.onTap,
     required this.onStar,
     this.onLongPress,
@@ -19,31 +20,59 @@ class EmailItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final latestEmail = thread.latestEmail;
+
     return GestureDetector(
       onLongPress: onLongPress,
       child: ListTile(
         leading: CircleAvatar(
           backgroundColor: Colors.grey[200],
           child: Text(
-            (email.senderName ?? email.senderPhone)[0].toUpperCase(),
+            (latestEmail.senderName ?? latestEmail.senderPhone)[0]
+                .toUpperCase(),
             style: const TextStyle(color: Colors.black),
           ),
         ),
         title: Row(
           children: [
             Expanded(
-              child: Text(
-                email.senderName ?? email.senderPhone,
-                style: TextStyle(
-                  fontWeight:
-                      email.isRead ? FontWeight.normal : FontWeight.bold,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
+              child: Row(
+                children: [
+                  Flexible(
+                    child: Text(
+                      _getDisplaySender(),
+                      style: TextStyle(
+                        fontWeight: thread.hasUnread
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  if (thread.messageCount > 1)
+                    Container(
+                      margin: const EdgeInsets.only(left: 8),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade100,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '${thread.messageCount}',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.blue.shade700,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
             Text(
-              _formatTime(email.createdAt),
+              _formatTime(latestEmail.createdAt),
               style: TextStyle(
                 color: Colors.grey[600],
                 fontSize: 12,
@@ -55,16 +84,17 @@ class EmailItem extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              email.title,
+              thread.subject,
               style: TextStyle(
-                fontWeight: email.isRead ? FontWeight.normal : FontWeight.w500,
-                color: email.isRead ? Colors.grey[600] : Colors.black87,
+                fontWeight:
+                    thread.hasUnread ? FontWeight.w500 : FontWeight.normal,
+                color: thread.hasUnread ? Colors.black87 : Colors.grey[600],
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
             ),
             Text(
-              email.content,
+              latestEmail.content,
               style: TextStyle(
                 color: Colors.grey[600],
               ),
@@ -73,17 +103,17 @@ class EmailItem extends StatelessWidget {
             ),
             Row(
               children: [
-                if (email.attach.isNotEmpty)
+                if (thread.hasAttachments)
                   const Padding(
                     padding: EdgeInsets.only(right: 8.0),
                     child: Icon(Icons.attachment, size: 16, color: Colors.grey),
                   ),
                 // Ẩn hiển thị label
-                // if (email.labels != null && email.labels!.isNotEmpty)
+                // if (latestEmail.labels.isNotEmpty)
                 //   Expanded(
                 //     child: Wrap(
                 //       spacing: 4,
-                //       children: email.labels!.take(3).map((label) {
+                //       children: latestEmail.labels.take(3).map((label) {
                 //         return Container(
                 //           padding: const EdgeInsets.symmetric(
                 //             horizontal: 6,
@@ -128,8 +158,8 @@ class EmailItem extends StatelessWidget {
         ),
         trailing: IconButton(
           icon: Icon(
-            email.isStarred ? Icons.star : Icons.star_border,
-            color: email.isStarred ? Colors.amber : Colors.grey,
+            thread.isStarred ? Icons.star : Icons.star_border,
+            color: thread.isStarred ? Colors.amber : Colors.grey,
           ),
           onPressed: onStar,
         ),
@@ -138,6 +168,15 @@ class EmailItem extends StatelessWidget {
         onTap: onTap,
       ),
     );
+  }
+
+  String _getDisplaySender() {
+    if (thread.messageCount == 1) {
+      return thread.latestEmail.senderName ?? thread.latestEmail.senderPhone;
+    } else {
+      // Hiển thị tất cả participants (for now show names from latest email)
+      return thread.latestEmail.senderName ?? thread.latestEmail.senderPhone;
+    }
   }
 
   String _formatTime(DateTime time) {

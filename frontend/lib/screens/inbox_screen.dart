@@ -79,7 +79,7 @@ class _InboxScreenState extends State<InboxScreen> {
       case GmailPage.important:
         return 'Quan trọng';
       case GmailPage.snoozed:
-        return 'Hoãn lại';
+        return 'Đã tạm ẩn';
       case GmailPage.scheduled:
         return 'Đã lên lịch';
       case GmailPage.outbox:
@@ -97,7 +97,11 @@ class _InboxScreenState extends State<InboxScreen> {
   void initState() {
     super.initState();
     // Gọi API lấy dữ liệu khi màn hình được tải
-    Future.microtask(() => context.read<EmailService>().fetchInboxMails());
+    Future.microtask(() {
+      final emailService = context.read<EmailService>();
+      emailService.fetchInboxMails(); // Trang chính chỉ hiển thị thư đến
+      emailService.fetchAllMailCounts();
+    });
   }
 
   void _selectPage(GmailPage page) {
@@ -109,16 +113,19 @@ class _InboxScreenState extends State<InboxScreen> {
 
     switch (page) {
       case GmailPage.primary:
-        emailService.fetchInboxMails(); // Trang chính hiển thị tất cả thư đến
+        emailService.fetchInboxMails(); // Trang chính chỉ hiển thị thư đến
         break;
       case GmailPage.promotions:
-        emailService.fetchInboxMails(); // Placeholder
+        // Mặc định trống
+        emailService.clearEmails();
         break;
       case GmailPage.social:
-        emailService.fetchInboxMails(); // Placeholder
+        // Mặc định trống
+        emailService.clearEmails();
         break;
       case GmailPage.updates:
-        emailService.fetchInboxMails(); // Placeholder
+        // Mặc định trống
+        emailService.clearEmails();
         break;
       case GmailPage.starred:
         emailService.fetchStarredMails();
@@ -133,27 +140,35 @@ class _InboxScreenState extends State<InboxScreen> {
         emailService.fetchTrashedMails();
         break;
       case GmailPage.important:
-        emailService.fetchInboxMails(); // Placeholder
+        // Chỉ hiển thị mail có label "Quan trọng"
+        emailService.fetchMailsByLabel("Quan trọng");
         break;
       case GmailPage.snoozed:
-        emailService.fetchInboxMails(); // Placeholder
+        // Chỉ hiển thị mail có label "Đã tạm ẩn"
+        emailService.fetchMailsByLabel("Đã tạm ẩn");
         break;
       case GmailPage.scheduled:
-        emailService.fetchInboxMails(); // Placeholder
+        // Chỉ hiển thị mail có label "Đã lên lịch"
+        emailService.fetchMailsByLabel("Đã lên lịch");
         break;
       case GmailPage.outbox:
-        emailService.fetchInboxMails(); // Placeholder
+        // Chỉ hiển thị mail có label "Hộp thư đi"
+        emailService.fetchMailsByLabel("Hộp thư đi");
         break;
       case GmailPage.allMail:
         emailService.fetchAllMails();
         break;
       case GmailPage.spam:
-        emailService.fetchInboxMails(); // Placeholder
+        // Chỉ hiển thị mail có label "Spam"
+        emailService.fetchMailsByLabel("Spam");
         break;
       default:
         emailService.fetchInboxMails();
         break;
     }
+
+    // Refresh all counts after page change
+    emailService.fetchAllMailCounts();
 
     Navigator.pop(context);
   }
@@ -517,155 +532,173 @@ class _InboxScreenState extends State<InboxScreen> {
       ),
       drawer: Drawer(
         backgroundColor: const Color(0xFFEAF3FB),
-        child: ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            const SizedBox(height: 40),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Text('Gmail',
-                  style: TextStyle(
-                      color: Colors.red,
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold)),
-            ),
-            const Divider(),
+        child: Consumer<EmailService>(
+          builder: (context, emailService, child) {
+            return ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                const SizedBox(height: 40),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                  child: Text('Gmail',
+                      style: TextStyle(
+                          color: Colors.red,
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold)),
+                ),
+                const Divider(),
 
-            // 1. Tất cả hộp thư đến
-            const DrawerSectionHeader(title: 'Tất cả hộp thư đến'),
-            DrawerItem(
-              icon: Icons.inbox,
-              label: 'Chính',
-              selected: _currentPage == GmailPage.primary,
-              highlight: _currentPage == GmailPage.primary,
-              onTap: () => _selectPage(GmailPage.primary),
-            ),
-            DrawerItem(
-              icon: Icons.local_offer,
-              label: 'Quảng cáo',
-              selected: _currentPage == GmailPage.promotions,
-              onTap: () => _selectPage(GmailPage.promotions),
-            ),
-            DrawerItem(
-              icon: Icons.people,
-              label: 'Mạng xã hội',
-              selected: _currentPage == GmailPage.social,
-              onTap: () => _selectPage(GmailPage.social),
-            ),
-            DrawerItem(
-              icon: Icons.info,
-              label: 'Cập nhật',
-              selected: _currentPage == GmailPage.updates,
-              onTap: () => _selectPage(GmailPage.updates),
-            ),
+                // 1. Tất cả hộp thư đến
+                const DrawerSectionHeader(title: 'Tất cả hộp thư đến'),
+                DrawerItem(
+                  icon: Icons.inbox,
+                  label: 'Chính',
+                  selected: _currentPage == GmailPage.primary,
+                  highlight: _currentPage == GmailPage.primary,
+                  count: emailService.inboxCount,
+                  onTap: () => _selectPage(GmailPage.primary),
+                ),
+                DrawerItem(
+                  icon: Icons.local_offer,
+                  label: 'Quảng cáo',
+                  selected: _currentPage == GmailPage.promotions,
+                  count: emailService.promotionsCount,
+                  onTap: () => _selectPage(GmailPage.promotions),
+                ),
+                DrawerItem(
+                  icon: Icons.people,
+                  label: 'Mạng xã hội',
+                  selected: _currentPage == GmailPage.social,
+                  count: emailService.socialCount,
+                  onTap: () => _selectPage(GmailPage.social),
+                ),
+                DrawerItem(
+                  icon: Icons.info,
+                  label: 'Cập nhật',
+                  selected: _currentPage == GmailPage.updates,
+                  count: emailService.updatesCount,
+                  onTap: () => _selectPage(GmailPage.updates),
+                ),
 
-            // 2. Tất cả nhãn
-            const DrawerSectionHeader(title: 'Tất cả nhãn'),
-            DrawerItem(
-              icon: Icons.star,
-              label: 'Có gắn dấu sao',
-              selected: _currentPage == GmailPage.starred,
-              onTap: () => _selectPage(GmailPage.starred),
-            ),
-            DrawerItem(
-              icon: Icons.snooze,
-              label: 'Đã tạm ẩn',
-              selected: _currentPage == GmailPage.snoozed,
-              onTap: () => _selectPage(GmailPage.snoozed),
-            ),
-            DrawerItem(
-              icon: Icons.label_important,
-              label: 'Quan trọng',
-              selected: _currentPage == GmailPage.important,
-              onTap: () => _selectPage(GmailPage.important),
-            ),
-            DrawerItem(
-              icon: Icons.send,
-              label: 'Đã gửi',
-              selected: _currentPage == GmailPage.sent,
-              onTap: () => _selectPage(GmailPage.sent),
-            ),
-            DrawerItem(
-              icon: Icons.schedule,
-              label: 'Đã lên lịch',
-              selected: _currentPage == GmailPage.scheduled,
-              onTap: () => _selectPage(GmailPage.scheduled),
-            ),
-            DrawerItem(
-              icon: Icons.outbox,
-              label: 'Hộp thư đi',
-              selected: _currentPage == GmailPage.outbox,
-              onTap: () => _selectPage(GmailPage.outbox),
-            ),
-            DrawerItem(
-              icon: Icons.drafts,
-              label: 'Thư nháp',
-              selected: _currentPage == GmailPage.drafts,
-              onTap: () => _selectPage(GmailPage.drafts),
-            ),
-            DrawerItem(
-              icon: Icons.all_inbox,
-              label: 'Tất cả thư',
-              selected: _currentPage == GmailPage.allMail,
-              onTap: () => _selectPage(GmailPage.allMail),
-            ),
-            DrawerItem(
-              icon: Icons.report,
-              label: 'Thư rác',
-              selected: _currentPage == GmailPage.spam,
-              onTap: () => _selectPage(GmailPage.spam),
-            ),
-            DrawerItem(
-              icon: Icons.delete,
-              label: 'Thùng rác',
-              selected: _currentPage == GmailPage.trash,
-              onTap: () => _selectPage(GmailPage.trash),
-            ),
+                // 2. Tất cả nhãn
+                const DrawerSectionHeader(title: 'Tất cả nhãn'),
+                DrawerItem(
+                  icon: Icons.star,
+                  label: 'Có gắn dấu sao',
+                  selected: _currentPage == GmailPage.starred,
+                  count: emailService.starredCount,
+                  onTap: () => _selectPage(GmailPage.starred),
+                ),
+                DrawerItem(
+                  icon: Icons.snooze,
+                  label: 'Đã tạm ẩn',
+                  selected: _currentPage == GmailPage.snoozed,
+                  count: emailService.snoozedCount,
+                  onTap: () => _selectPage(GmailPage.snoozed),
+                ),
+                DrawerItem(
+                  icon: Icons.label_important,
+                  label: 'Quan trọng',
+                  selected: _currentPage == GmailPage.important,
+                  count: emailService.importantCount,
+                  onTap: () => _selectPage(GmailPage.important),
+                ),
+                DrawerItem(
+                  icon: Icons.send,
+                  label: 'Đã gửi',
+                  selected: _currentPage == GmailPage.sent,
+                  count: emailService.sentCount,
+                  onTap: () => _selectPage(GmailPage.sent),
+                ),
+                DrawerItem(
+                  icon: Icons.schedule,
+                  label: 'Đã lên lịch',
+                  selected: _currentPage == GmailPage.scheduled,
+                  count: emailService.scheduledCount,
+                  onTap: () => _selectPage(GmailPage.scheduled),
+                ),
+                DrawerItem(
+                  icon: Icons.outbox,
+                  label: 'Hộp thư đi',
+                  selected: _currentPage == GmailPage.outbox,
+                  count: emailService.outboxCount,
+                  onTap: () => _selectPage(GmailPage.outbox),
+                ),
+                DrawerItem(
+                  icon: Icons.drafts,
+                  label: 'Thư nháp',
+                  selected: _currentPage == GmailPage.drafts,
+                  count: emailService.draftCount,
+                  onTap: () => _selectPage(GmailPage.drafts),
+                ),
+                DrawerItem(
+                  icon: Icons.all_inbox,
+                  label: 'Tất cả thư',
+                  selected: _currentPage == GmailPage.allMail,
+                  count: emailService.allMailCount,
+                  onTap: () => _selectPage(GmailPage.allMail),
+                ),
+                DrawerItem(
+                  icon: Icons.report,
+                  label: 'Thư rác',
+                  selected: _currentPage == GmailPage.spam,
+                  count: emailService.spamCount,
+                  onTap: () => _selectPage(GmailPage.spam),
+                ),
+                DrawerItem(
+                  icon: Icons.delete,
+                  label: 'Thùng rác',
+                  selected: _currentPage == GmailPage.trash,
+                  count: emailService.trashCount,
+                  onTap: () => _selectPage(GmailPage.trash),
+                ),
 
-            // 3. Các ứng dụng của Google
-            const DrawerSectionHeader(title: 'Các ứng dụng của Google'),
-            DrawerItem(
-              icon: Icons.calendar_today,
-              label: 'Lịch',
-              selected: false,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/calendar');
-              },
-            ),
-            DrawerItem(
-              icon: Icons.contacts,
-              label: 'Danh bạ',
-              selected: false,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/contacts');
-              },
-            ),
+                // 3. Các ứng dụng của Google
+                const DrawerSectionHeader(title: 'Các ứng dụng của Google'),
+                DrawerItem(
+                  icon: Icons.calendar_today,
+                  label: 'Lịch',
+                  selected: false,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/calendar');
+                  },
+                ),
+                DrawerItem(
+                  icon: Icons.contacts,
+                  label: 'Danh bạ',
+                  selected: false,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/contacts');
+                  },
+                ),
 
-            // 4. Khác
-            const DrawerSectionHeader(title: 'Khác'),
-            DrawerItem(
-              icon: Icons.settings,
-              label: 'Cài đặt',
-              selected: false,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/settings');
-              },
-            ),
-            DrawerItem(
-              icon: Icons.help_outline,
-              label: 'Trợ giúp và phản hồi',
-              selected: false,
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.pushNamed(context, '/help');
-              },
-            ),
+                // 4. Khác
+                const DrawerSectionHeader(title: 'Khác'),
+                DrawerItem(
+                  icon: Icons.settings,
+                  label: 'Cài đặt',
+                  selected: false,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/settings');
+                  },
+                ),
+                DrawerItem(
+                  icon: Icons.help_outline,
+                  label: 'Trợ giúp và phản hồi',
+                  selected: false,
+                  onTap: () {
+                    Navigator.pop(context);
+                    Navigator.pushNamed(context, '/help');
+                  },
+                ),
 
-            const SizedBox(height: 20), // Khoảng trống cuối
-          ],
+                const SizedBox(height: 20), // Khoảng trống cuối
+              ],
+            );
+          },
         ),
       ),
       body: Column(

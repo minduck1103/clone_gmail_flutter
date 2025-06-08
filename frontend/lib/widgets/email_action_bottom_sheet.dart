@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/mail.dart';
 import '../services/email_service.dart';
 import '../screens/compose_screen.dart';
+import 'label_management_dialog.dart';
 
 class EmailActionBottomSheet extends StatelessWidget {
   final Mail email;
@@ -27,7 +28,7 @@ class EmailActionBottomSheet extends StatelessWidget {
                 CircleAvatar(
                   backgroundColor: Colors.grey.shade200,
                   child: Text(
-                    email.senderPhone[0].toUpperCase(),
+                    (email.senderName ?? email.senderPhone)[0].toUpperCase(),
                     style: const TextStyle(color: Colors.black),
                   ),
                 ),
@@ -46,7 +47,7 @@ class EmailActionBottomSheet extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                       ),
                       Text(
-                        email.senderPhone,
+                        email.senderName ?? email.senderPhone,
                         style: TextStyle(
                           color: Colors.grey.shade600,
                           fontSize: 14,
@@ -164,7 +165,10 @@ class EmailActionBottomSheet extends StatelessWidget {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => const ComposeScreen(),
+        builder: (context) => ComposeScreen(
+          forwardFromEmail: email,
+          isForward: true,
+        ),
       ),
     );
   }
@@ -271,11 +275,9 @@ class EmailActionBottomSheet extends StatelessWidget {
   }
 
   void _handleManageLabels(BuildContext context) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Tính năng quản lý nhãn sẽ được cập nhật'),
-        duration: Duration(seconds: 2),
-      ),
+    showDialog(
+      context: context,
+      builder: (context) => LabelManagementDialog(email: email),
     );
   }
 

@@ -73,13 +73,13 @@ class _LoginScreenState extends State<LoginScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Padding(
-                padding: const EdgeInsets.all(24.0),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
                       // Logo Gmail
                       Container(
                         padding: const EdgeInsets.all(20),
@@ -113,11 +113,11 @@ class _LoginScreenState extends State<LoginScreen> {
                       ),
                       const SizedBox(height: 32),
                       // Số điện thoại
-                      TextFormField(
-                        controller: _phoneController,
-                        keyboardType: TextInputType.phone,
-                        decoration: InputDecoration(
-                          labelText: 'Số điện thoại',
+                TextFormField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: InputDecoration(
+                    labelText: 'Số điện thoại',
                           prefixIcon:
                               const Icon(Icons.phone, color: Colors.red),
                           border: OutlineInputBorder(
@@ -128,32 +128,32 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderSide:
                                 const BorderSide(color: Colors.red, width: 2),
                           ),
-                        ),
-                        validator: (value) => value == null || value.isEmpty
+                  ),
+                  validator: (value) => value == null || value.isEmpty
                             ? 'Vui lòng nhập số điện thoại'
-                            : null,
-                      ),
+                      : null,
+                ),
                       const SizedBox(height: 16),
                       // Mật khẩu
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscureText,
-                        decoration: InputDecoration(
-                          labelText: 'Mật khẩu',
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: _obscureText,
+                  decoration: InputDecoration(
+                    labelText: 'Mật khẩu',
                           prefixIcon: const Icon(Icons.lock, color: Colors.red),
-                          suffixIcon: IconButton(
+                    suffixIcon: IconButton(
                             icon: Icon(
                               _obscureText
-                                  ? Icons.visibility
+                          ? Icons.visibility
                                   : Icons.visibility_off,
                               color: Colors.grey,
                             ),
-                            onPressed: () {
-                              setState(() {
-                                _obscureText = !_obscureText;
-                              });
-                            },
-                          ),
+                      onPressed: () {
+                        setState(() {
+                          _obscureText = !_obscureText;
+                        });
+                      },
+                    ),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -162,7 +162,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             borderSide:
                                 const BorderSide(color: Colors.red, width: 2),
                           ),
-                        ),
+                  ),
                         validator: (value) => value == null || value.isEmpty
                             ? 'Vui lòng nhập mật khẩu'
                             : null,
@@ -191,8 +191,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         height: 50,
                         child: authService.isLoading
                             ? const Center(child: CircularProgressIndicator())
-                            : ElevatedButton(
-                                onPressed: () => _login(context),
+                    : ElevatedButton(
+                        onPressed: () => _login(context),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: Colors.red,
                                   foregroundColor: Colors.white,
@@ -235,8 +235,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                 decoration: TextDecoration.underline,
                               ),
                             ),
-                          ),
-                        ],
+                      ),
+              ],
                       ),
                     ],
                   ),

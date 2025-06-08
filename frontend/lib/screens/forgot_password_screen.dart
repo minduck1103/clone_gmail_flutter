@@ -27,16 +27,47 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
     });
 
     try {
-      final response = await ApiService.forgotPassword(_phoneController.text.trim());
-      
+      final response =
+          await ApiService.forgotPassword(_phoneController.text.trim());
+
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(response['message'] ?? 'Đã gửi link reset mật khẩu'),
-            backgroundColor: Colors.green,
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Thành công!'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(response['message'] ?? 'Mật khẩu đã được reset'),
+                const SizedBox(height: 10),
+                if (response['tempPassword'] != null)
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      'Mật khẩu mới: ${response['tempPassword']}',
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).pop(); // Close dialog
+                  Navigator.of(context).pop(); // Back to login
+                },
+                child: const Text('Đăng nhập ngay'),
+              ),
+            ],
           ),
         );
-        Navigator.pop(context);
       }
     } catch (e) {
       if (mounted) {
@@ -107,7 +138,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Nhập số điện thoại để nhận link reset mật khẩu',
+                      'Nhập số điện thoại để reset mật khẩu về 123123',
                       style: TextStyle(
                         fontSize: 14,
                         color: Colors.grey.shade600,
@@ -115,7 +146,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 32),
-                    
+
                     // Phone field
                     TextFormField(
                       controller: _phoneController,
@@ -142,7 +173,7 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                       },
                     ),
                     const SizedBox(height: 24),
-                    
+
                     // Submit button
                     SizedBox(
                       width: double.infinity,
@@ -158,10 +189,11 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
                         ),
                         child: _isLoading
                             ? const CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               )
                             : const Text(
-                                'Gửi link reset',
+                                'Reset mật khẩu',
                                 style: TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.w600,
@@ -178,4 +210,4 @@ class _ForgotPasswordScreenState extends State<ForgotPasswordScreen> {
       ),
     );
   }
-} 
+}

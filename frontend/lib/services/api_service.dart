@@ -277,6 +277,38 @@ class ApiService {
     }
   }
 
+  static Future<List<dynamic>> getMailsByLabel(String label) async {
+    try {
+      await getToken();
+      print('Fetching mails with label: $label');
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/mail/user/label/${Uri.encodeComponent(label)}'),
+        headers: _headers,
+      );
+
+      print('Mails by label response status: ${response.statusCode}');
+      if (response.statusCode == 404) {
+        // Không có mail với label này, trả về mảng rỗng
+        print('No mails found with label $label, returning empty list');
+        return [];
+      }
+      if (response.statusCode != 200) {
+        print('Error response body: ${response.body}');
+        throw Exception(
+            'Failed to load mails by label: ${response.statusCode} - ${response.reasonPhrase}');
+      }
+
+      final data = json.decode(response.body);
+      final mails = data is List ? data : [];
+      print('Fetched ${mails.length} mails with label: $label');
+      return mails;
+    } catch (e) {
+      print('Error fetching mails by label: $e');
+      rethrow;
+    }
+  }
+
   static Future<Map<String, dynamic>> getMailById(String id) async {
     try {
       await getToken();
@@ -473,16 +505,27 @@ class ApiService {
     }
   }
 
-  static Future<Map<String, dynamic>> updatePassword(String newPassword) async {
+  static Future<Map<String, dynamic>> updatePassword(
+      String currentPassword, String newPassword) async {
     try {
       await getToken();
-      final response = await http.put(
+      final response = await http.post(
         Uri.parse('$baseUrl/auth/update-password'),
         headers: _headers,
-        body: json.encode({'password': newPassword}),
+        body: json.encode({
+          'password': currentPassword,
+          'newPassword': newPassword,
+        }),
       );
       print('Update password response status: ${response.statusCode}');
-      return json.decode(response.body);
+      print('Update password response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        return json.decode(response.body);
+      } else {
+        final errorData = json.decode(response.body);
+        throw Exception(errorData['message'] ?? 'Cập nhật mật khẩu thất bại');
+      }
     } catch (e) {
       print('Error update password: $e');
       rethrow;
@@ -705,20 +748,22 @@ class ApiService {
     }
   }
 
-  static Future<List<dynamic>> getMailsByLabel(String labelName) async {
+  static Future<Map<String, dynamic>> updateLabels(
+      String mailId, List<String> labels) async {
     try {
       await getToken();
-      final response = await http.get(
-        Uri.parse('$baseUrl/label/mail/$labelName'),
+      final response = await http.patch(
+        Uri.parse('$baseUrl/mail/$mailId/labels'),
         headers: _headers,
+        body: json.encode({'labels': labels}),
       );
-      print('Get mails by label response status: ${response.statusCode}');
-      if (response.statusCode == 404) {
-        return [];
+      print('Update labels response status: ${response.statusCode}');
+      if (response.statusCode != 200) {
+        throw Exception('Failed to update labels: ${response.statusCode}');
       }
       return json.decode(response.body);
     } catch (e) {
-      print('Error get mails by label: $e');
+      print('Error update labels: $e');
       rethrow;
     }
   }

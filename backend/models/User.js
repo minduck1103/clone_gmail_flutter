@@ -33,29 +33,23 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Update timestamp on save
-userSchema.pre("save", function (next) {
-  this.updatedAt = Date.now();
-  next();
-});
-
-// Hash password before saving
+// Combined pre-save hook for timestamp and password hashing
 userSchema.pre("save", async function (next) {
   try {
+    // Update timestamp
+    this.updatedAt = Date.now();
+    
     // Only hash the password if it has been modified (or is new)
-    if (!this.isModified("password")) {
-      return next();
-    }
-
-    // Ensure password exists
-    if (this.password) {
-      const salt = await bcrypt.genSalt(8);
+    if (this.isModified("password") && this.password) {
+      console.log('Hashing password for user:', this.phone);
+      const salt = await bcrypt.genSalt(12);
       const hashedPassword = await bcrypt.hash(this.password, salt);
       this.password = hashedPassword;
+      console.log('Password hashed successfully');
     }
     next();
   } catch (error) {
-    console.error("Password hashing error:", error);
+    console.error("Pre-save hook error:", error);
     next(error);
   }
 });

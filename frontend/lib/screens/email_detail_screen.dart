@@ -34,7 +34,8 @@ class EmailDetailScreen extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     backgroundColor: Colors.grey[200],
-                    child: Text(mail.senderPhone[0].toUpperCase()),
+                    child: Text(
+                        (mail.senderName ?? mail.senderPhone)[0].toUpperCase()),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -42,7 +43,7 @@ class EmailDetailScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          mail.senderPhone,
+                          mail.senderName ?? mail.senderPhone,
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

@@ -15,6 +15,7 @@ const {
   moveToTrash,
   replyMail,
   forwardMail,
+  updateLabels,
   // getMailBySearch,
 } = require("../controllers/mailController");
 
@@ -24,7 +25,8 @@ const{
   getDraftMails,
   getTrashedMails,
   getStarredMails,
-  getAllMails
+  getAllMails,
+  getMailsByLabel
 } = require("../controllers/getMailsController");
 
 // Multer config
@@ -61,7 +63,7 @@ router.delete("/:id", auth, deleteMail);
 router.patch("/:id/star", auth, toggleStarred);
 router.patch("/:id/read", auth, toggleRead);
 router.patch("/:id/trash", auth, moveToTrash);
-//router.patch("/:id/labels",  updateLabels);
+router.patch("/:id/labels", auth, updateLabels);
 router.post("/:id/reply", auth, upload.array("attachments", 5), replyMail);
 router.post("/:id/forward", auth, upload.array("attachments", 5), forwardMail);
 
@@ -71,6 +73,7 @@ router.get("/user/drafts", auth, getDraftMails);
 router.get("/user/trash", auth, getTrashedMails);
 router.get("/user/starred", auth, getStarredMails);
 router.get("/user/all", auth, getAllMails);
+router.get("/user/label/:label", auth, getMailsByLabel);
 
 
 module.exports = router;

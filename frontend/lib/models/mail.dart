@@ -6,6 +6,7 @@ part 'mail.g.dart';
 class Mail {
   final String id;
   final String senderPhone;
+  final String? senderName;
   final List<String> recipient;
   final List<String> cc;
   final List<String> bcc;
@@ -25,6 +26,7 @@ class Mail {
   Mail({
     required this.id,
     required this.senderPhone,
+    this.senderName,
     required this.recipient,
     this.cc = const [],
     this.bcc = const [],
@@ -45,6 +47,7 @@ class Mail {
   factory Mail.fromJson(Map<String, dynamic> json) => Mail(
         id: json['_id'] ?? '',
         senderPhone: json['senderPhone'] ?? '',
+        senderName: json['senderName'],
         recipient: List<String>.from(json['recipient'] ?? []),
         cc: List<String>.from(json['cc'] ?? []),
         bcc: List<String>.from(json['bcc'] ?? []),
@@ -66,6 +69,7 @@ class Mail {
   Mail copyWith({
     String? id,
     String? senderPhone,
+    String? senderName,
     List<String>? recipient,
     List<String>? cc,
     List<String>? bcc,
@@ -85,6 +89,7 @@ class Mail {
     return Mail(
       id: id ?? this.id,
       senderPhone: senderPhone ?? this.senderPhone,
+      senderName: senderName ?? this.senderName,
       recipient: recipient ?? this.recipient,
       cc: cc ?? this.cc,
       bcc: bcc ?? this.bcc,

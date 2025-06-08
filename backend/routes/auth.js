@@ -101,7 +101,7 @@ router.post("/logout", auth, async (req, res) => {
   }
 });
 
-//forgot password
+//forgot password - auto reset to 123123
 router.post(
   "/forgot-password",
   [body("phone").notEmpty().withMessage("Please input phone number")],
@@ -120,17 +120,18 @@ router.post(
         return res.status(400).json({ message: "User not found" });
       }
 
-      // Generate reset token
-      const resetToken = crypto.randomBytes(32).toString("hex");
-      user.resetToken = resetToken;
-      user.resetTokenExpiration = Date.now() + 3600000; // 1 hour
+      // Automatically reset password to 123123
+      user.password = "123123";
+      console.log('Resetting password to 123123 for user:', phone);
       await user.save();
+      console.log('Password reset completed');
 
-      // Send email with reset link (pseudo code)
-      // sendEmail(user.email, `Reset your password: ${resetToken}`);
-
-      res.json({ message: "Reset link sent to your email" });
+      res.json({ 
+        message: "Mật khẩu đã được reset về 123123. Bạn có thể đăng nhập ngay bây giờ.",
+        tempPassword: "123123"
+      });
     } catch (error) {
+      console.error('Forgot password error:', error);
       return res.status(500).json({ message: "Server error" });
     }
   }
@@ -158,8 +159,8 @@ router.post(
           .json({ message: "Password reset token is invalid or has expired" });
       }
 
-      const salt = await bcrypt.genSalt(32);
-      user.password = await bcrypt.hash(req.body.password, salt);
+      // Set new password and let the pre-save hook handle hashing
+      user.password = req.body.password;
       user.resetPasswordToken = undefined;
       user.resetPasswordExpires = undefined;
       await user.save();
@@ -197,9 +198,11 @@ router.post(
           .json({ message: "Current password is incorrect" });
       }
 
-      const salt = await bcrypt.genSalt(32);
-      user.password = await bcrypt.hash(newPassword, salt);
+      // Set new password and let the pre-save hook handle hashing
+      user.password = newPassword;
+      console.log('About to save user with new password:', newPassword);
       await user.save();
+      console.log('User saved successfully, password updated');
 
       res.json({ message: "Password updated successfully" });
     } catch (error) {

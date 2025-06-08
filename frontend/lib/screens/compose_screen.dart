@@ -7,6 +7,7 @@ import '../models/mail.dart';
 
 class ComposeScreen extends StatefulWidget {
   final Mail? replyToEmail;
+  final Mail? forwardFromEmail;
   final bool isReply;
   final bool isReplyAll;
   final bool isForward;
@@ -14,6 +15,7 @@ class ComposeScreen extends StatefulWidget {
   const ComposeScreen({
     super.key,
     this.replyToEmail,
+    this.forwardFromEmail,
     this.isReply = false,
     this.isReplyAll = false,
     this.isForward = false,
@@ -41,29 +43,48 @@ class _ComposeScreenState extends State<ComposeScreen> {
   }
 
   void _initializeFields() {
-    if (widget.replyToEmail != null) {
-      if (widget.isReply) {
-        if (widget.isReplyAll) {
-          // Reply all - include all recipients
-          List<String> allRecipients = [widget.replyToEmail!.senderPhone];
-          allRecipients.addAll(widget.replyToEmail!.recipient);
-          allRecipients.removeWhere((recipient) => recipient.isEmpty);
-          _toController.text = allRecipients.join(', ');
-        } else {
-          // Reply only to sender
-          _toController.text = widget.replyToEmail!.senderPhone;
+    if (widget.replyToEmail != null && widget.isReply) {
+      if (widget.isReplyAll) {
+        // Reply all - include all recipients
+        List<String> allRecipients = [widget.replyToEmail!.senderPhone];
+        allRecipients.addAll(widget.replyToEmail!.recipient);
+        allRecipients.removeWhere((recipient) => recipient.isEmpty);
+        _toController.text = allRecipients.join(', ');
+      } else {
+        // Reply only to sender
+        _toController.text = widget.replyToEmail!.senderPhone;
+      }
+      _subjectController.text = widget.replyToEmail!.title.startsWith('Re: ')
+          ? widget.replyToEmail!.title
+          : 'Re: ${widget.replyToEmail!.title}';
+
+      // Sử dụng tên thay vì số điện thoại nếu có
+      String replySenderDisplay =
+          widget.replyToEmail!.senderName ?? widget.replyToEmail!.senderPhone;
+
+      _contentController.text =
+          '\n\n--- Tin nhắn gốc ---\nTừ: $replySenderDisplay\nChủ đề: ${widget.replyToEmail!.title}\nNgày: ${_formatDate(widget.replyToEmail!.createdAt)}\n\n${widget.replyToEmail!.content}';
+    } else if (widget.forwardFromEmail != null && widget.isForward) {
+      _subjectController.text =
+          widget.forwardFromEmail!.title.startsWith('Fwd: ')
+              ? widget.forwardFromEmail!.title
+              : 'Fwd: ${widget.forwardFromEmail!.title}';
+
+      // Sử dụng tên thay vì số điện thoại nếu có
+      String senderDisplay = widget.forwardFromEmail!.senderName ??
+          widget.forwardFromEmail!.senderPhone;
+
+      _contentController.text =
+          '\n\n--- Tin nhắn được chuyển tiếp ---\nTừ: $senderDisplay\nĐến: ${widget.forwardFromEmail!.recipient.join(', ')}\nChủ đề: ${widget.forwardFromEmail!.title}\nNgày: ${_formatDate(widget.forwardFromEmail!.createdAt)}\n\n${widget.forwardFromEmail!.content}';
+
+      // Thêm thông tin về attachments nếu có
+      if (widget.forwardFromEmail!.attach.isNotEmpty) {
+        _contentController.text += '\n\n--- Tệp đính kèm gốc ---\n';
+        for (String attachment in widget.forwardFromEmail!.attach) {
+          _contentController.text += '📎 $attachment\n';
         }
-        _subjectController.text = widget.replyToEmail!.title.startsWith('Re: ')
-            ? widget.replyToEmail!.title
-            : 'Re: ${widget.replyToEmail!.title}';
-        _contentController.text =
-            '\n\n--- Original Message ---\nFrom: ${widget.replyToEmail!.senderPhone}\nSubject: ${widget.replyToEmail!.title}\n\n${widget.replyToEmail!.content}';
-      } else if (widget.isForward) {
-        _subjectController.text = widget.replyToEmail!.title.startsWith('Fwd: ')
-            ? widget.replyToEmail!.title
-            : 'Fwd: ${widget.replyToEmail!.title}';
-        _contentController.text =
-            '\n\n--- Forwarded Message ---\nFrom: ${widget.replyToEmail!.senderPhone}\nTo: ${widget.replyToEmail!.recipient.join(', ')}\nSubject: ${widget.replyToEmail!.title}\n\n${widget.replyToEmail!.content}';
+        _contentController.text +=
+            '(Tệp đính kèm từ email gốc không được chuyển tiếp tự động)';
       }
     }
   }
@@ -76,6 +97,10 @@ class _ComposeScreenState extends State<ComposeScreen> {
     _subjectController.dispose();
     _contentController.dispose();
     super.dispose();
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _pickFiles() async {
@@ -338,6 +363,37 @@ class _ComposeScreenState extends State<ComposeScreen> {
             child: SingleChildScrollView(
               child: Column(
                 children: [
+                  // Forward/Reply indicator banner
+                  if (widget.isForward || widget.isReply)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 16, vertical: 12),
+                      color: Colors.blue.shade50,
+                      child: Row(
+                        children: [
+                          Icon(
+                            widget.isForward ? Icons.forward : Icons.reply,
+                            color: Colors.blue.shade600,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            widget.isForward
+                                ? 'Đang chuyển tiếp email từ ${widget.forwardFromEmail?.senderName ?? widget.forwardFromEmail?.senderPhone}'
+                                : widget.isReplyAll
+                                    ? 'Đang trả lời tất cả'
+                                    : 'Đang trả lời email từ ${widget.replyToEmail?.senderName ?? widget.replyToEmail?.senderPhone}',
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   // Email fields container
                   Container(
                     color: Colors.white,
