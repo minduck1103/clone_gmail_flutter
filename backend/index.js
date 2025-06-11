@@ -63,6 +63,14 @@ if (!fs.existsSync(attachmentsDir)) {
   fs.mkdirSync(attachmentsDir);
 }
 
+// Serve static files for uploaded images with CORS headers
+app.use('/uploads', (req, res, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET');
+  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+  next();
+}, express.static(path.join(__dirname, 'uploads')));
+
 //Routes
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
@@ -72,8 +80,33 @@ app.use('/api/label', require('./routes/label'));
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error("Global Error:", err.stack);
+  
+  // Handle multer errors specifically
+  if (err.message && err.message.includes('Only accept')) {
+    // Check if this is for mail attachments or user profile
+    const isMailRoute = req.path.startsWith('/api/mail');
+    const supportedFormats = isMailRoute 
+      ? ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.txt']
+      : ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      
+    return res.status(400).json({
+      message: err.message,
+      error: 'Invalid file format',
+      supportedFormats: supportedFormats
+    });
+  }
+  
+  // Handle other multer errors
+  if (err.code === 'LIMIT_FILE_SIZE') {
+    return res.status(400).json({
+      message: 'File too large',
+      error: 'Maximum file size is 5MB'
+    });
+  }
+  
+  // Generic error handler
   res.status(500).json({
-    message: 'Something broke!',
+    message: err.message || 'Server error',
     error: err.message || err,
     stack: process.env.NODE_ENV === 'development' ? err.stack : undefined
   });

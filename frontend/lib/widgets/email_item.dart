@@ -73,7 +73,7 @@ class EmailItem extends StatelessWidget {
             ),
             Row(
               children: [
-                if (email.attach.isNotEmpty)
+            if (email.attach.isNotEmpty)
                   const Padding(
                     padding: EdgeInsets.only(right: 8.0),
                     child: Icon(Icons.attachment, size: 16, color: Colors.grey),

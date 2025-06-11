@@ -11,6 +11,7 @@ class ComposeScreen extends StatefulWidget {
   final bool isReply;
   final bool isReplyAll;
   final bool isForward;
+  final Mail? existingDraft;
 
   const ComposeScreen({
     super.key,
@@ -19,6 +20,7 @@ class ComposeScreen extends StatefulWidget {
     this.isReply = false,
     this.isReplyAll = false,
     this.isForward = false,
+    this.existingDraft,
   });
 
   @override
@@ -43,49 +45,59 @@ class _ComposeScreenState extends State<ComposeScreen> {
   }
 
   void _initializeFields() {
+    if (widget.existingDraft != null) {
+      final draft = widget.existingDraft!;
+      _toController.text = draft.recipient.join(', ');
+      _subjectController.text =
+          draft.title == '(Không có chủ đề)' ? '' : draft.title;
+      _contentController.text = draft.content;
+      if (draft.cc.isNotEmpty) {
+        _ccController.text = draft.cc.join(', ');
+        _showCcBcc = true;
+      }
+      if (draft.bcc.isNotEmpty) {
+        _bccController.text = draft.bcc.join(', ');
+        _showCcBcc = true;
+      }
+      return;
+    }
+
     if (widget.replyToEmail != null && widget.isReply) {
       if (widget.isReplyAll) {
-        // Reply all - include all recipients
         List<String> allRecipients = [widget.replyToEmail!.senderPhone];
         allRecipients.addAll(widget.replyToEmail!.recipient);
         allRecipients.removeWhere((recipient) => recipient.isEmpty);
         _toController.text = allRecipients.join(', ');
       } else {
-        // Reply only to sender
         _toController.text = widget.replyToEmail!.senderPhone;
       }
       _subjectController.text = widget.replyToEmail!.title.startsWith('Re: ')
           ? widget.replyToEmail!.title
           : 'Re: ${widget.replyToEmail!.title}';
 
-      // Sử dụng tên thay vì số điện thoại nếu có
       String replySenderDisplay =
           widget.replyToEmail!.senderName ?? widget.replyToEmail!.senderPhone;
-
       _contentController.text =
-          '\n\n--- Tin nhắn gốc ---\nTừ: $replySenderDisplay\nChủ đề: ${widget.replyToEmail!.title}\nNgày: ${_formatDate(widget.replyToEmail!.createdAt)}\n\n${widget.replyToEmail!.content}';
+          '\n\n--- Tin nhắn gốc ---\nTừ: $replySenderDisplay\nChủ đề: ${widget.replyToEmail!.title}\n\n${widget.replyToEmail!.content}';
     } else if (widget.forwardFromEmail != null && widget.isForward) {
       _subjectController.text =
           widget.forwardFromEmail!.title.startsWith('Fwd: ')
               ? widget.forwardFromEmail!.title
               : 'Fwd: ${widget.forwardFromEmail!.title}';
 
-      // Sử dụng tên thay vì số điện thoại nếu có
       String senderDisplay = widget.forwardFromEmail!.senderName ??
           widget.forwardFromEmail!.senderPhone;
 
-      _contentController.text =
-          '\n\n--- Tin nhắn được chuyển tiếp ---\nTừ: $senderDisplay\nĐến: ${widget.forwardFromEmail!.recipient.join(', ')}\nChủ đề: ${widget.forwardFromEmail!.title}\nNgày: ${_formatDate(widget.forwardFromEmail!.createdAt)}\n\n${widget.forwardFromEmail!.content}';
+      // Format nội dung forward theo Gmail
+      String forwardContent = '\n\n---------- Forwarded message ---------\n';
+      forwardContent += 'From: $senderDisplay\n';
+      forwardContent += 'Date: ${widget.forwardFromEmail!.createdAt}\n';
+      forwardContent += 'Subject: ${widget.forwardFromEmail!.title}\n';
+      forwardContent +=
+          'To: ${widget.forwardFromEmail!.recipient.join(', ')}\n\n';
+      forwardContent += widget.forwardFromEmail!.content;
 
-      // Thêm thông tin về attachments nếu có
-      if (widget.forwardFromEmail!.attach.isNotEmpty) {
-        _contentController.text += '\n\n--- Tệp đính kèm gốc ---\n';
-        for (String attachment in widget.forwardFromEmail!.attach) {
-          _contentController.text += '📎 $attachment\n';
-        }
-        _contentController.text +=
-            '(Tệp đính kèm từ email gốc không được chuyển tiếp tự động)';
-      }
+      _contentController.text = forwardContent;
     }
   }
 
@@ -97,10 +109,6 @@ class _ComposeScreenState extends State<ComposeScreen> {
     _subjectController.dispose();
     _contentController.dispose();
     super.dispose();
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
   }
 
   Future<void> _pickFiles() async {
@@ -138,14 +146,8 @@ class _ComposeScreenState extends State<ComposeScreen> {
     });
   }
 
-  bool _isValidPhone(String phone) {
-    final phoneRegex = RegExp(r'^[0-9]{10,11}$');
-    return phoneRegex.hasMatch(phone.trim());
-  }
-
   List<String> _parsePhones(String phoneString) {
     if (phoneString.trim().isEmpty) return [];
-
     return phoneString
         .split(',')
         .map((e) => e.trim())
@@ -153,20 +155,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
         .toList();
   }
 
-  String? _validatePhones(String phoneString, String fieldName) {
-    final phones = _parsePhones(phoneString);
-    if (phones.isEmpty) return null;
-
-    for (String phone in phones) {
-      if (!_isValidPhone(phone)) {
-        return '$fieldName chứa số điện thoại không hợp lệ: $phone';
-      }
-    }
-    return null;
-  }
-
   Future<void> _sendEmail() async {
-    // Validation
     if (_toController.text.trim().isEmpty) {
       _showError('Vui lòng nhập người nhận');
       return;
@@ -182,40 +171,11 @@ class _ComposeScreenState extends State<ComposeScreen> {
       return;
     }
 
-    // Validate phone numbers
-    String? toError = _validatePhones(_toController.text, 'Người nhận');
-    if (toError != null) {
-      _showError(toError);
-      return;
-    }
-
-    String? ccError = _validatePhones(_ccController.text, 'CC');
-    if (ccError != null) {
-      _showError(ccError);
-      return;
-    }
-
-    String? bccError = _validatePhones(_bccController.text, 'BCC');
-    if (bccError != null) {
-      _showError(bccError);
-      return;
-    }
-
     setState(() {
       _isSending = true;
     });
 
     try {
-      // Prepare attachments data
-      List<Map<String, dynamic>> attachData = [];
-      for (var file in _attachments) {
-        attachData.add({
-          'filename': file.name,
-          'size': file.size,
-          'type': file.extension ?? 'unknown',
-        });
-      }
-
       final emailData = {
         'recipient': _parsePhones(_toController.text),
         'title': _subjectController.text.trim(),
@@ -227,17 +187,23 @@ class _ComposeScreenState extends State<ComposeScreen> {
         'isTrashed': false,
         'cc': _parsePhones(_ccController.text),
         'bcc': _parsePhones(_bccController.text),
-        'attach': attachData,
       };
 
-      final response = await ApiService.createMail(emailData);
+      final Map<String, dynamic> response;
+
+      if (_attachments.isNotEmpty) {
+        response = await ApiService.createMailWithAttachments(
+          emailData,
+          _attachments,
+        );
+      } else {
+        response = await ApiService.createMail(emailData);
+      }
 
       if (response['message'] == 'Mail created successfully') {
         if (mounted) {
-          // Refresh email list
           context.read<EmailService>().fetchInboxMails();
           context.read<EmailService>().fetchSentMails();
-
           Navigator.pop(context);
           _showSuccess('Email đã được gửi thành công!');
         }
@@ -257,44 +223,87 @@ class _ComposeScreenState extends State<ComposeScreen> {
 
   void _showError(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
   void _showSuccess(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.green,
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.green),
     );
   }
 
   Future<void> _saveDraft() async {
     try {
-      final draftData = {
-        'recipient': _parsePhones(_toController.text),
-        'title': _subjectController.text.trim().isEmpty
-            ? '(Không có chủ đề)'
-            : _subjectController.text.trim(),
-        'content': _contentController.text.trim(),
-        'autoSave': true,
-        'isRead': false,
-        'isStarred': false,
-        'labels': [],
-        'isTrashed': false,
-        'cc': _parsePhones(_ccController.text),
-        'bcc': _parsePhones(_bccController.text),
-        'attach': [],
-      };
-
-      await ApiService.createMail(draftData);
-
+      if (widget.existingDraft != null) {
+        if (_toController.text == widget.existingDraft!.recipient.join(', ') &&
+            _subjectController.text == widget.existingDraft!.title &&
+            _contentController.text == widget.existingDraft!.content &&
+            _ccController.text == widget.existingDraft!.cc.join(', ') &&
+            _bccController.text == widget.existingDraft!.bcc.join(', ')) {
+          Navigator.pop(context);
+          return;
+        }
+        final draftData = {
+          'recipient': _parsePhones(_toController.text),
+          'title': _subjectController.text.trim().isEmpty
+              ? '(Không có chủ đề)'
+              : _subjectController.text.trim(),
+          'content': _contentController.text.trim(),
+          'autoSave': true,
+          'isRead': false,
+          'isStarred': false,
+          'labels': ['Thư nháp'],
+          'isTrashed': false,
+          'cc': _parsePhones(_ccController.text),
+          'bcc': _parsePhones(_bccController.text),
+          'attach': [],
+        };
+        await ApiService.updateMail(widget.existingDraft!.id, draftData);
+      } else {
+        final drafts = await ApiService.getDraftMails();
+        final similarDraft = drafts.firstWhere(
+          (draft) =>
+            ((draft['recipient'] ?? []) as List).join(', ') == _toController.text &&
+            (draft['title'] ?? '') == _subjectController.text,
+          orElse: () => null,
+        );
+        if (similarDraft != null) {
+          final draftData = {
+            'recipient': _parsePhones(_toController.text),
+            'title': _subjectController.text.trim().isEmpty
+                ? '(Không có chủ đề)'
+                : _subjectController.text.trim(),
+            'content': _contentController.text.trim(),
+            'autoSave': true,
+            'isRead': false,
+            'isStarred': false,
+            'labels': ['Thư nháp'],
+            'isTrashed': false,
+            'cc': _parsePhones(_ccController.text),
+            'bcc': _parsePhones(_bccController.text),
+            'attach': [],
+          };
+          await ApiService.updateMail(similarDraft['_id'] ?? similarDraft['id'], draftData);
+        } else {
+          final draftData = {
+            'recipient': _parsePhones(_toController.text),
+            'title': _subjectController.text.trim().isEmpty
+                ? '(Không có chủ đề)'
+                : _subjectController.text.trim(),
+            'content': _contentController.text.trim(),
+            'autoSave': true,
+            'isRead': false,
+            'isStarred': false,
+            'labels': ['Thư nháp'],
+            'isTrashed': false,
+            'cc': _parsePhones(_ccController.text),
+            'bcc': _parsePhones(_bccController.text),
+            'attach': [],
+          };
+          await ApiService.createMail(draftData);
+        }
+      }
       if (mounted) {
         context.read<EmailService>().fetchDraftMails();
         Navigator.pop(context);
@@ -314,7 +323,15 @@ class _ComposeScreenState extends State<ComposeScreen> {
         elevation: 1,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.black87),
-          onPressed: () => Navigator.pop(context),
+          onPressed: () async {
+            if (_toController.text.isNotEmpty ||
+                _subjectController.text.isNotEmpty ||
+                _contentController.text.isNotEmpty) {
+              await _saveDraft();
+            } else {
+              Navigator.pop(context);
+            }
+          },
         ),
         title: const Text(
           'Soạn thư',
@@ -350,8 +367,10 @@ class _ComposeScreenState extends State<ComposeScreen> {
               style: TextButton.styleFrom(
                 foregroundColor: Colors.blue,
                 backgroundColor: Colors.blue.withOpacity(0.1),
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
               ),
             ),
           ),
@@ -359,159 +378,108 @@ class _ComposeScreenState extends State<ComposeScreen> {
       ),
       body: Column(
         children: [
-          Expanded(
-            child: SingleChildScrollView(
-              child: Column(
-                children: [
-                  // Forward/Reply indicator banner
-                  if (widget.isForward || widget.isReply)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 16, vertical: 12),
-                      color: Colors.blue.shade50,
-                      child: Row(
-                        children: [
-                          Icon(
-                            widget.isForward ? Icons.forward : Icons.reply,
-                            color: Colors.blue.shade600,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            widget.isForward
-                                ? 'Đang chuyển tiếp email từ ${widget.forwardFromEmail?.senderName ?? widget.forwardFromEmail?.senderPhone}'
-                                : widget.isReplyAll
-                                    ? 'Đang trả lời tất cả'
-                                    : 'Đang trả lời email từ ${widget.replyToEmail?.senderName ?? widget.replyToEmail?.senderPhone}',
-                            style: TextStyle(
-                              color: Colors.blue.shade700,
-                              fontWeight: FontWeight.w500,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // Email fields container
+          Container(
+            color: Colors.white,
+            child: Column(
+              children: [
+                _buildEmailField(
+                  controller: _toController,
+                  label: 'Đến',
+                  hintText: 'Nhập số điện thoại người nhận',
+                  isRequired: true,
+                ),
+                if (!_showCcBcc)
                   Container(
-                    color: Colors.white,
-                    child: Column(
-                      children: [
-                        // To field
-                        _buildEmailField(
-                          controller: _toController,
-                          label: 'Đến',
-                          hintText: 'Nhập số điện thoại người nhận',
-                          isRequired: true,
-                        ),
-
-                        // CC/BCC toggle and fields
-                        if (!_showCcBcc)
-                          Container(
-                            alignment: Alignment.centerLeft,
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 16, vertical: 8),
-                            child: TextButton(
-                              onPressed: () {
-                                setState(() {
-                                  _showCcBcc = true;
-                                });
-                              },
-                              child: Text(
-                                '+ CC/BCC',
-                                style: TextStyle(color: Colors.blue.shade600),
-                              ),
-                            ),
-                          ),
-
-                        if (_showCcBcc) ...[
-                          _buildEmailField(
-                            controller: _ccController,
-                            label: 'CC',
-                            hintText: 'Số điện thoại CC (tùy chọn)',
-                          ),
-                          _buildEmailField(
-                            controller: _bccController,
-                            label: 'BCC',
-                            hintText: 'Số điện thoại BCC (tùy chọn)',
-                          ),
-                        ],
-
-                        // Subject field
-                        _buildEmailField(
-                          controller: _subjectController,
-                          label: 'Chủ đề',
-                          hintText: 'Nhập chủ đề email',
-                          isRequired: true,
-                        ),
-
-                        const Divider(height: 1, color: Colors.grey),
-                      ],
+                    alignment: Alignment.centerLeft,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    child: TextButton(
+                      onPressed: () => setState(() => _showCcBcc = true),
+                      child: Text(
+                        '+ CC/BCC',
+                        style: TextStyle(color: Colors.blue.shade600),
+                      ),
                     ),
                   ),
-
-                  // Attachments section
-                  if (_attachments.isNotEmpty)
-                    Container(
-                      color: Colors.grey.shade50,
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Tệp đính kèm (${_attachments.length})',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Wrap(
-                            spacing: 8,
-                            runSpacing: 8,
-                            children: _attachments.asMap().entries.map((entry) {
-                              int index = entry.key;
-                              PlatformFile file = entry.value;
-                              return Chip(
-                                avatar: Icon(
-                                  _getFileIcon(file.extension),
-                                  size: 18,
-                                  color: Colors.blue.shade600,
-                                ),
-                                label: Text(
-                                  file.name,
-                                  style: const TextStyle(fontSize: 12),
-                                ),
-                                onDeleted: () => _removeAttachment(index),
-                                deleteIconColor: Colors.red,
-                                backgroundColor: Colors.white,
-                              );
-                            }).toList(),
-                          ),
-                        ],
-                      ),
-                    ),
-
-                  // Content field
-                  Container(
-                    color: Colors.white,
-                    constraints: const BoxConstraints(minHeight: 300),
-                    child: TextField(
-                      controller: _contentController,
-                      decoration: const InputDecoration(
-                        hintText: 'Soạn nội dung email...',
-                        border: InputBorder.none,
-                        contentPadding: EdgeInsets.all(16),
-                        hintStyle: TextStyle(color: Colors.grey),
-                      ),
-                      maxLines: null,
-                      keyboardType: TextInputType.multiline,
-                      textCapitalization: TextCapitalization.sentences,
-                    ),
+                if (_showCcBcc) ...[
+                  _buildEmailField(
+                    controller: _ccController,
+                    label: 'CC',
+                    hintText: 'Số điện thoại CC (tùy chọn)',
+                  ),
+                  _buildEmailField(
+                    controller: _bccController,
+                    label: 'BCC',
+                    hintText: 'Số điện thoại BCC (tùy chọn)',
                   ),
                 ],
+                _buildEmailField(
+                  controller: _subjectController,
+                  label: 'Chủ đề',
+                  hintText: 'Nhập chủ đề email',
+                  isRequired: true,
+                ),
+                const Divider(height: 1, color: Colors.grey),
+              ],
+            ),
+          ),
+          if (_attachments.isNotEmpty)
+            Container(
+              color: Colors.grey.shade50,
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Tệp đính kèm (${_attachments.length})',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w500,
+                      color: Colors.grey.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: _attachments.asMap().entries.map((entry) {
+                      int index = entry.key;
+                      PlatformFile file = entry.value;
+                      return Chip(
+                        avatar: Icon(
+                          Icons.insert_drive_file,
+                          size: 18,
+                          color: Colors.blue.shade600,
+                        ),
+                        label: Text(
+                          file.name,
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                        onDeleted: () => _removeAttachment(index),
+                        deleteIconColor: Colors.red,
+                        backgroundColor: Colors.white,
+                      );
+                    }).toList(),
+                  ),
+                ],
+              ),
+            ),
+          Expanded(
+            child: Container(
+              color: Colors.white,
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _contentController,
+                decoration: const InputDecoration(
+                  hintText: 'Soạn nội dung email...',
+                  border: InputBorder.none,
+                  hintStyle: TextStyle(color: Colors.grey),
+                ),
+                maxLines: null,
+                expands: true,
+                keyboardType: TextInputType.multiline,
+                textCapitalization: TextCapitalization.sentences,
               ),
             ),
           ),
@@ -556,45 +524,9 @@ class _ComposeScreenState extends State<ComposeScreen> {
             ),
           ),
           if (isRequired)
-            Text(
-              '*',
-              style: TextStyle(color: Colors.red.shade600),
-            ),
+            Text('*', style: TextStyle(color: Colors.red.shade600)),
         ],
       ),
     );
-  }
-
-  IconData _getFileIcon(String? extension) {
-    switch (extension?.toLowerCase()) {
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      case 'xls':
-      case 'xlsx':
-        return Icons.table_chart;
-      case 'ppt':
-      case 'pptx':
-        return Icons.slideshow;
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-        return Icons.image;
-      case 'mp4':
-      case 'avi':
-      case 'mov':
-        return Icons.video_file;
-      case 'mp3':
-      case 'wav':
-        return Icons.audio_file;
-      case 'zip':
-      case 'rar':
-        return Icons.archive;
-      default:
-        return Icons.insert_drive_file;
-    }
   }
 }

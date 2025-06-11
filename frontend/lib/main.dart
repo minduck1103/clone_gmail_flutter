@@ -63,12 +63,14 @@ class MyApp extends StatelessWidget {
 }
 
 class AuthOrInbox extends StatelessWidget {
+  const AuthOrInbox({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Consumer<AuthService>(
       builder: (context, auth, _) {
         if (auth.isAuthenticated) {
-          return InboxScreen();
+          return const InboxScreen();
         } else {
           return LoginScreen();
         }

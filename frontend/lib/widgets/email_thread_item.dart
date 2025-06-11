@@ -248,3 +248,4 @@ class EmailThreadItem extends StatelessWidget {
     }
   }
 }
+ 

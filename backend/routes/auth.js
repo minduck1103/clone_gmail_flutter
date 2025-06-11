@@ -191,7 +191,7 @@ router.post(
       }
 
       // Check current password
-      const isMatch = await bcrypt.compare(password, user.password);
+      const isMatch = await user.comparePassword(password);
       if (!isMatch) {
         return res
           .status(400)

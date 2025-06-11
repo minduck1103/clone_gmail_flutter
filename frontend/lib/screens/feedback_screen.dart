@@ -86,7 +86,7 @@ class _FeedbackScreenState extends State<FeedbackScreen> {
               ),
               child: Column(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.feedback_outlined,
                     size: 48,
                     color: Colors.red,

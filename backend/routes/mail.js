@@ -35,7 +35,22 @@ const storage = multer.diskStorage({
     cb(null, "uploads/attachments");
   },
   filename: function (req, file, cb) {
-    cb(null, `${Date.now()}-${file.originalname}`);
+    // Clean filename to avoid encoding issues
+    const cleanName = file.originalname
+      .replace(/[^\w\-_.]/g, '_')  // Replace special chars with underscore
+      .replace(/_{2,}/g, '_');     // Replace multiple underscores with single
+    
+    const timestamp = Date.now();
+    const ext = path.extname(file.originalname);
+    const nameWithoutExt = path.basename(file.originalname, ext);
+    
+    // Create safe filename: timestamp-cleanname.ext
+    const safeFilename = `${timestamp}-${nameWithoutExt.replace(/[^\w\-]/g, '_')}${ext}`;
+    
+    console.log("Original filename:", file.originalname);
+    console.log("Safe filename:", safeFilename);
+    
+    cb(null, safeFilename);
   },
 });
 
@@ -43,13 +58,19 @@ const upload = multer({
   storage,
   limits: { fileSize: 1024 * 1024 * 10 }, // 10MB
   fileFilter: function (req, file, cb) {
-    const filetypes = /pdf|doc|docx|jpg|jpeg|png|txt/;
-    const mimetype = filetypes.test(file.mimetype);
-    const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    if (mimetype && extname) {
+    console.log("Checking file:", file.originalname, "MIME:", file.mimetype);
+    
+    // Allow based on file extension
+    const extname = path.extname(file.originalname).toLowerCase();
+    const allowedExtensions = ['.pdf', '.doc', '.docx', '.jpg', '.jpeg', '.png', '.txt'];
+    
+    if (allowedExtensions.includes(extname)) {
+      console.log("File accepted:", extname);
       return cb(null, true);
     }
-    cb(new Error("Only accept .pdf, .doc, .docx, .jpg, .jpeg, .png .txt!"));
+    
+    console.log("File rejected:", extname);
+    cb(new Error("Only accept .pdf, .doc, .docx, .jpg, .jpeg, .png, .txt files!"));
   },
 });
 

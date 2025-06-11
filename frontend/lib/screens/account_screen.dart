@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 import '../services/auth_service.dart';
 import '../services/api_service.dart';
 import '../models/user.dart';
+import '../widgets/image_viewer.dart';
 
 class AccountScreen extends StatefulWidget {
   @override
@@ -98,7 +99,23 @@ class _AccountScreenState extends State<AccountScreen> {
           maxWidth: 512,
           maxHeight: 512,
           imageQuality: 80,
+          preferredCameraDevice: CameraDevice.rear,
         );
+
+        if (image != null) {
+          // Check file extension
+          final String fileName = image.name.toLowerCase();
+          final bool isValidFormat = fileName.endsWith('.jpg') ||
+              fileName.endsWith('.jpeg') ||
+              fileName.endsWith('.png') ||
+              fileName.endsWith('.gif') ||
+              fileName.endsWith('.webp');
+
+          if (!isValidFormat) {
+            throw Exception(
+                'Invalid file format. Only accept .jpg, .jpeg, .png, .gif, .webp');
+          }
+        }
 
         if (image != null) {
           setState(() {
@@ -108,29 +125,52 @@ class _AccountScreenState extends State<AccountScreen> {
           // Upload avatar using API
           final response = await ApiService.uploadAvatar(image.path);
 
+          print('Upload response: $response');
+
           if (response['message'] == 'Avatar uploaded successfully') {
             // Update user data in AuthService
             final authService = context.read<AuthService>();
             await authService.loadUserData();
 
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Đã cập nhật ảnh đại diện thành công'),
-                backgroundColor: Colors.green,
-              ),
-            );
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Đã cập nhật ảnh đại diện thành công'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
           } else {
-            throw Exception('Upload failed');
+            final errorMessage =
+                response['message'] ?? response['error'] ?? 'Upload failed';
+            throw Exception(errorMessage);
           }
         }
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Lỗi khi upload ảnh: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
+      String errorMessage = 'Lỗi khi upload ảnh';
+
+      if (e.toString().contains('Invalid file format') ||
+          e.toString().contains('Only accept')) {
+        errorMessage =
+            'Chỉ chấp nhận file ảnh (.jpg, .jpeg, .png, .gif, .webp)';
+      } else if (e.toString().contains('File too large')) {
+        errorMessage = 'File quá lớn. Kích thước tối đa 5MB';
+      } else if (e.toString().contains('No file uploaded')) {
+        errorMessage = 'Vui lòng chọn file ảnh';
+      } else {
+        errorMessage = 'Lỗi khi upload ảnh: ${e.toString()}';
+      }
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(errorMessage),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() {
@@ -181,19 +221,34 @@ class _AccountScreenState extends State<AccountScreen> {
                         children: [
                           Stack(
                             children: [
-                              CircleAvatar(
-                                radius: 60,
-                                backgroundColor: Colors.red.shade50,
-                                backgroundImage: user.avatar != null
-                                    ? NetworkImage(user.avatar!)
-                                    : null,
-                                child: user.avatar == null
-                                    ? Icon(
-                                        Icons.person,
-                                        size: 60,
-                                        color: Colors.red.shade300,
-                                      )
-                                    : null,
+                              GestureDetector(
+                                onTap: () {
+                                  if (user.avatar != null &&
+                                      user.avatar!.isNotEmpty) {
+                                    ImageViewer.show(
+                                      context,
+                                      user.avatar!,
+                                      heroTag: 'profile_avatar',
+                                    );
+                                  }
+                                },
+                                child: Hero(
+                                  tag: 'profile_avatar',
+                                  child: CircleAvatar(
+                                    radius: 60,
+                                    backgroundColor: Colors.red.shade50,
+                                    backgroundImage: user.avatar != null
+                                        ? NetworkImage(user.avatar!)
+                                        : null,
+                                    child: user.avatar == null
+                                        ? Icon(
+                                            Icons.person,
+                                            size: 60,
+                                            color: Colors.red.shade300,
+                                          )
+                                        : null,
+                                  ),
+                                ),
                               ),
                               if (_isEditing)
                                 Positioned(

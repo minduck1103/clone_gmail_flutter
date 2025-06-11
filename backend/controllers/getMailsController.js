@@ -99,7 +99,7 @@ exports.getSentMails = async (req, res) => {
       $or: [
         { 
           senderPhone: req.user.phone,
-          autoSave: false,
+      autoSave: false,
         },
         { 
           senderPhone: req.user.phone,
@@ -126,8 +126,8 @@ exports.getDraftMails = async (req, res) => {
     const mails = await Mail.find({
       $or: [
         { 
-          createdBy: req.user._id,
-          autoSave: true,
+      createdBy: req.user._id,
+      autoSave: true,
         },
         { 
           $or: [
@@ -157,8 +157,8 @@ exports.getTrashedMails = async (req, res) => {
     const mails = await Mail.find({
       $or: [
         { 
-          createdBy: req.user._id,
-          isTrashed: true,
+      createdBy: req.user._id,
+      isTrashed: true,
         },
         { 
           $or: [

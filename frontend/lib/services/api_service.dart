@@ -1,5 +1,8 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http; // Mail APIs
+import 'package:http_parser/http_parser.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import '../models/mail.dart';
@@ -368,6 +371,84 @@ class ApiService {
     }
   }
 
+  static Future<Map<String, dynamic>> createMailWithAttachments(
+      Map<String, dynamic> mailData, List<PlatformFile> attachments) async {
+    try {
+      await getToken();
+      print('Creating mail with ${attachments.length} attachments');
+      print('Mail data: $mailData');
+
+      // Create multipart request
+      var request = http.MultipartRequest(
+        'POST',
+        Uri.parse('$baseUrl/mail'),
+      );
+
+      // Add headers
+      if (_token != null) {
+        request.headers['Authorization'] = 'Bearer $_token';
+      }
+
+      // Add text fields
+      request.fields['recipient'] = json.encode(mailData['recipient']);
+      request.fields['title'] = mailData['title'];
+      request.fields['content'] = mailData['content'];
+      request.fields['autoSave'] = mailData['autoSave'].toString();
+
+      if (mailData['cc'] != null && mailData['cc'].isNotEmpty) {
+        request.fields['cc'] = json.encode(mailData['cc']);
+      }
+      if (mailData['bcc'] != null && mailData['bcc'].isNotEmpty) {
+        request.fields['bcc'] = json.encode(mailData['bcc']);
+      }
+      if (mailData['labels'] != null && mailData['labels'].isNotEmpty) {
+        request.fields['labels'] = json.encode(mailData['labels']);
+      }
+
+      // Add file attachments
+      for (var file in attachments) {
+        if (file.bytes != null) {
+          var multipartFile = http.MultipartFile.fromBytes(
+            'attachments', // Field name that backend expects
+            file.bytes!,
+            filename: file.name,
+            contentType: MediaType('application', 'octet-stream'),
+          );
+          request.files.add(multipartFile);
+          print('Added attachment: ${file.name} (${file.size} bytes)');
+        } else if (file.path != null) {
+          var multipartFile = await http.MultipartFile.fromPath(
+            'attachments',
+            file.path!,
+            filename: file.name,
+            contentType: MediaType('application', 'octet-stream'),
+          );
+          request.files.add(multipartFile);
+          print('Added attachment: ${file.name} from path ${file.path}');
+        }
+      }
+
+      print('Sending multipart request with ${request.files.length} files...');
+      var response = await request.send();
+      var responseBody = await response.stream.bytesToString();
+
+      print('Create mail response status: ${response.statusCode}');
+      print('Create mail response body: $responseBody');
+
+      if (response.statusCode != 201) {
+        throw Exception(
+            'Failed to create mail with attachments: ${response.statusCode} - $responseBody');
+      }
+
+      final data = json.decode(responseBody);
+      print('Successfully created mail with attachments: ${data['message']}');
+      return data;
+    } catch (e) {
+      print('Error creating mail with attachments: $e');
+      rethrow;
+    }
+  }
+
   // Label APIs
   static Future<List<dynamic>> getLabels() async {
     await getToken();
@@ -535,7 +616,17 @@ class ApiService {
   // User APIs còn thiếu
   static Future<Map<String, dynamic>> uploadAvatar(String imagePath) async {
     try {
+      print('Starting avatar upload with path: $imagePath');
       await getToken();
+
+      // Verify file exists
+      final file = File(imagePath);
+      if (!await file.exists()) {
+        throw Exception('File does not exist at path: $imagePath');
+      }
+
+      print('File size: ${await file.length()} bytes');
+
       var request = http.MultipartRequest(
         'POST',
         Uri.parse('$baseUrl/user/avatar'),
@@ -543,15 +634,28 @@ class ApiService {
 
       if (_token != null) {
         request.headers['Authorization'] = 'Bearer $_token';
+        print('Token added to headers');
+      } else {
+        throw Exception('No authentication token available');
       }
 
       request.files.add(await http.MultipartFile.fromPath('avatar', imagePath));
+      print('File added to request');
 
       var response = await request.send();
       var responseBody = await response.stream.bytesToString();
 
       print('Upload avatar response status: ${response.statusCode}');
-      return json.decode(responseBody);
+      print('Upload avatar response body: $responseBody');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final result = json.decode(responseBody);
+        return result;
+      } else {
+        final errorData = json.decode(responseBody);
+        throw Exception(errorData['message'] ??
+            'Upload failed with status ${response.statusCode}');
+      }
     } catch (e) {
       print('Error upload avatar: $e');
       rethrow;

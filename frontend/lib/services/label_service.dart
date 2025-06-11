@@ -17,11 +17,9 @@ class LabelService extends ChangeNotifier {
 
     try {
       final response = await ApiService.getLabels();
-      if (response is List) {
-        _labels.clear();
-        _labels.addAll(response.cast<String>());
-      }
-    } catch (e) {
+      _labels.clear();
+      _labels.addAll(response.cast<String>());
+        } catch (e) {
       _error = e.toString();
     } finally {
       _isLoading = false;

@@ -4,6 +4,8 @@ import '../services/auth_service.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
+  const RegisterScreen({super.key});
+
   @override
   _RegisterScreenState createState() => _RegisterScreenState();
 }
@@ -98,7 +100,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           color: Colors.red.shade50,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.person_add,
                           size: 48,
                           color: Colors.red,

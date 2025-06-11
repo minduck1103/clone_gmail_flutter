@@ -5,6 +5,8 @@ import 'inbox_screen.dart';
 import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
+  const LoginScreen({super.key});
+
   @override
   _LoginScreenState createState() => _LoginScreenState();
 }
@@ -32,7 +34,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (success) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => InboxScreen()),
+          MaterialPageRoute(builder: (context) => const InboxScreen()),
         );
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -87,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           color: Colors.red.shade50,
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.mail,
                           size: 48,
                           color: Colors.red,
@@ -175,7 +177,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           onPressed: () {
                             Navigator.pushNamed(context, '/forgot-password');
                           },
-                          child: Text(
+                          child: const Text(
                             'Quên mật khẩu?',
                             style: TextStyle(
                               color: Colors.red,

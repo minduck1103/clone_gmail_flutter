@@ -7,7 +7,12 @@ exports.createMail = async (req, res) => {
     //   id: "68303019f9614c4478acabc6",
     //   phone: "111111111", // or any test number
     // };
-    const { recipient, cc, bcc, title, content, autoSave } = req.body;
+    const { recipient, cc, bcc, title, content, autoSave, labels } = req.body;
+
+    console.log('=== createMail Debug ===');
+    console.log('Request body:', req.body);
+    console.log('Labels:', labels);
+    console.log('AutoSave:', autoSave);
 
     // Validate required fields
     if (!recipient || !title || !content) {
@@ -36,10 +41,20 @@ exports.createMail = async (req, res) => {
       content,
       attach: attachments,
       autoSave: autoSave === "true" || autoSave === true,
+      labels: labels || [],
       createdBy: req.user._id,
     });
 
+    console.log('Mail object before save:', {
+      senderPhone: newMail.senderPhone,
+      recipient: newMail.recipient,
+      title: newMail.title,
+      autoSave: newMail.autoSave,
+      labels: newMail.labels
+    });
+
     await newMail.save();
+    console.log('Mail saved successfully with ID:', newMail._id);
 
     // Check for auto-reply settings in recipients
     const recipientsArray = Array.isArray(recipient) ? recipient : [recipient];
@@ -76,6 +91,7 @@ exports.createMail = async (req, res) => {
       .status(201)
       .json({ message: "Mail created successfully", mail: newMail });
   } catch (error) {
+    console.error('Error in createMail:', error);
     res.status(500).json({ message: "Server error", error: error.message });
   }
 };
@@ -116,7 +132,14 @@ exports.updateMail = async (req, res) => {
 
     // Handle uploaded attachments
     const attachments = req.files
-      ? req.files.map((file) => `/uploads/attachments/${file.filename}`)
+      ? req.files.map((file) => {
+          console.log('Processing attachment:', {
+            originalName: file.originalname,
+            filename: file.filename,
+            path: `/uploads/attachments/${file.filename}`
+          });
+          return `/uploads/attachments/${file.filename}`;
+        })
       : [];
 
     // Update mail instance

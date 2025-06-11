@@ -32,12 +32,10 @@ class _LabelsScreenState extends State<LabelsScreen> {
 
     try {
       final response = await ApiService.getLabels();
-      if (response is List) {
-        setState(() {
-          _labels = response.cast<String>();
-        });
-      }
-    } catch (e) {
+      setState(() {
+        _labels = response.cast<String>();
+      });
+        } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Lỗi khi tải labels: $e'),

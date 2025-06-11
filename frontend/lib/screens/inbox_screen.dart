@@ -23,6 +23,7 @@ import 'gmail_pages/spam_page.dart';
 import 'compose_screen.dart';
 import 'email_list_screen.dart';
 import '../widgets/email_action_bottom_sheet.dart';
+import '../widgets/image_viewer.dart';
 
 // Các loại trang chính
 enum GmailPage {
@@ -57,6 +58,20 @@ class _InboxScreenState extends State<InboxScreen> {
   GmailPage _currentPage = GmailPage.primary;
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
+
+  // Advanced search variables
+  bool _showAdvancedSearch = false;
+  final TextEditingController _fromController = TextEditingController();
+  final TextEditingController _toController = TextEditingController();
+  String? _selectedLabel;
+  String? _selectedTimeFilter;
+
+  final List<String> _timeFilters = [
+    'Mọi lúc',
+    'Hơn 1 tuần trước',
+    'Hơn 1 tháng trước',
+    'Hơn 1 năm trước',
+  ];
 
   String _getPageTitle(GmailPage page) {
     switch (page) {
@@ -181,6 +196,17 @@ class _InboxScreenState extends State<InboxScreen> {
     );
   }
 
+  void _handleDraftTap(Mail email) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ComposeScreen(
+          existingDraft: email,
+        ),
+      ),
+    );
+  }
+
   void _handleStarEmail(Mail email) {
     final emailService = context.read<EmailService>();
     emailService.toggleStarred(email.id);
@@ -190,13 +216,6 @@ class _InboxScreenState extends State<InboxScreen> {
     switch (value) {
       case 'account':
         Navigator.pushNamed(context, '/account');
-        break;
-      case 'settings':
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Tính năng cài đặt sẽ được cập nhật'),
-          ),
-        );
         break;
       case 'logout':
         _showLogoutDialog();
@@ -316,7 +335,7 @@ class _InboxScreenState extends State<InboxScreen> {
       case GmailPage.drafts:
         return DraftsPage(
           emails: filteredEmails,
-          onEmailTap: _handleEmailTap,
+          onEmailTap: _handleDraftTap,
           onStarEmail: _handleStarEmail,
         );
       case GmailPage.trash:
@@ -377,9 +396,144 @@ class _InboxScreenState extends State<InboxScreen> {
     }
   }
 
+  Future<void> _performAdvancedSearch() async {
+    try {
+      final emailService = context.read<EmailService>();
+      await emailService.fetchAllMails();
+      final allMails = emailService.emails;
+
+      // Áp dụng basic search
+      var filteredMails = _searchQuery.isEmpty
+          ? allMails
+          : allMails
+              .where((e) =>
+                  e.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                  e.senderPhone
+                      .toLowerCase()
+                      .contains(_searchQuery.toLowerCase()) ||
+                  e.content.toLowerCase().contains(_searchQuery.toLowerCase()))
+              .toList();
+
+      // Lọc theo người gửi
+      if (_fromController.text.isNotEmpty) {
+        filteredMails = filteredMails.where((mail) {
+          return mail.senderPhone
+                  .toLowerCase()
+                  .contains(_fromController.text.toLowerCase()) ||
+              (mail.senderName
+                      ?.toLowerCase()
+                      .contains(_fromController.text.toLowerCase()) ??
+                  false);
+        }).toList();
+      }
+
+      // Lọc theo người nhận
+      if (_toController.text.isNotEmpty) {
+        filteredMails = filteredMails.where((mail) {
+          return mail.recipient.any((recipient) => recipient
+              .toLowerCase()
+              .contains(_toController.text.toLowerCase()));
+        }).toList();
+      }
+
+      // Lọc theo nhãn
+      if (_selectedLabel != null) {
+        filteredMails = filteredMails
+            .where((mail) => mail.labels.contains(_selectedLabel))
+            .toList();
+      }
+
+      // Lọc theo thời gian
+      if (_selectedTimeFilter != null && _selectedTimeFilter != 'Mọi lúc') {
+        final now = DateTime.now();
+        filteredMails = filteredMails.where((mail) {
+          switch (_selectedTimeFilter) {
+            case 'Hơn 1 tuần trước':
+              return now.difference(mail.createdAt).inDays > 7;
+            case 'Hơn 1 tháng trước':
+              return now.difference(mail.createdAt).inDays > 30;
+            case 'Hơn 1 năm trước':
+              return now.difference(mail.createdAt).inDays > 365;
+            default:
+              return true;
+          }
+        }).toList();
+      }
+
+      // Update search query để trigger re-render với filtered emails
+      setState(() {
+        // Đặt searchQuery để system biết đang trong chế độ search
+        if (_fromController.text.isNotEmpty ||
+            _toController.text.isNotEmpty ||
+            _selectedLabel != null ||
+            (_selectedTimeFilter != null && _selectedTimeFilter != 'Mọi lúc')) {
+          _searchQuery = _searchQuery.isEmpty ? ' ' : _searchQuery;
+        }
+      });
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Lỗi khi tìm kiếm: $e')),
+      );
+    }
+  }
+
+  void _clearAdvancedSearch() {
+    setState(() {
+      _fromController.clear();
+      _toController.clear();
+      _selectedLabel = null;
+      _selectedTimeFilter = null;
+      _searchQuery = '';
+      _searchController.clear();
+    });
+  }
+
+  Widget _buildTabChip(String title, GmailPage page) {
+    final isSelected = _currentPage == page;
+    return Container(
+      margin: const EdgeInsets.only(right: 8),
+      child: FilterChip(
+        label: Text(title),
+        selected: isSelected,
+        onSelected: (selected) {
+          setState(() {
+            _currentPage = page;
+          });
+          _loadPageData(page);
+        },
+        selectedColor: Colors.blue.shade100,
+        checkmarkColor: Colors.blue.shade700,
+        labelStyle: TextStyle(
+          color: isSelected ? Colors.blue.shade700 : Colors.grey.shade700,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+        ),
+      ),
+    );
+  }
+
+  void _loadPageData(GmailPage page) {
+    final emailService = context.read<EmailService>();
+
+    switch (page) {
+      case GmailPage.primary:
+        emailService.fetchInboxMails();
+        break;
+      case GmailPage.promotions:
+      case GmailPage.social:
+      case GmailPage.updates:
+        // Có thể implement logic riêng cho từng tab
+        emailService.fetchInboxMails();
+        break;
+      default:
+        emailService.fetchInboxMails();
+    }
+  }
+
   @override
   void dispose() {
     _searchController.dispose();
+    _fromController.dispose();
+    _toController.dispose();
     super.dispose();
   }
 
@@ -413,11 +567,22 @@ class _InboxScreenState extends State<InboxScreen> {
                             _searchQuery = value;
                           });
                         },
+                        onTap: () {
+                          setState(() {
+                            _showAdvancedSearch = true;
+                          });
+                        },
                         decoration: InputDecoration(
                           hintText: 'Tìm kiếm trong thư',
                           border: InputBorder.none,
-                          prefixIcon:
-                              const Icon(Icons.search, color: Colors.grey),
+                          prefixIcon: IconButton(
+                            icon: const Icon(Icons.search, color: Colors.grey),
+                            onPressed: () {
+                              setState(() {
+                                _showAdvancedSearch = !_showAdvancedSearch;
+                              });
+                            },
+                          ),
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
                                   icon: const Icon(Icons.clear,
@@ -426,6 +591,7 @@ class _InboxScreenState extends State<InboxScreen> {
                                     setState(() {
                                       _searchQuery = '';
                                       _searchController.clear();
+                                      _showAdvancedSearch = false;
                                     });
                                   },
                                 )
@@ -437,92 +603,16 @@ class _InboxScreenState extends State<InboxScreen> {
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Consumer<AuthService>(
-                    builder: (context, authService, child) {
-                      final user = authService.user;
-                      return PopupMenuButton<String>(
-                        onSelected: _handleAvatarMenuSelection,
-                        offset: const Offset(0, 45),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: CircleAvatar(
-                          radius: 18,
-                          backgroundColor: Colors.red.shade50,
-                          backgroundImage: user?.avatar != null
-                              ? NetworkImage(user!.avatar!)
-                              : null,
-                          child: user?.avatar == null
-                              ? Icon(
-                                  Icons.person,
-                                  color: Colors.red.shade300,
-                                  size: 20,
-                                )
-                              : null,
-                        ),
-                        itemBuilder: (BuildContext context) => [
-                          PopupMenuItem<String>(
-                            value: 'account_info',
-                            enabled: false,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  user?.fullname ?? 'Người dùng',
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  user?.phone ?? '',
-                                  style: TextStyle(
-                                    color: Colors.grey.shade600,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          PopupMenuItem<String>(
-                            value: 'account',
-                            child: Row(
-                              children: const [
-                                Icon(Icons.person, color: Colors.grey),
-                                SizedBox(width: 12),
-                                Text('Tài khoản cá nhân'),
-                              ],
-                            ),
-                          ),
-                          PopupMenuItem<String>(
-                            value: 'settings',
-                            child: Row(
-                              children: const [
-                                Icon(Icons.settings, color: Colors.grey),
-                                SizedBox(width: 12),
-                                Text('Cài đặt'),
-                              ],
-                            ),
-                          ),
-                          const PopupMenuDivider(),
-                          PopupMenuItem<String>(
-                            value: 'logout',
-                            child: Row(
-                              children: const [
-                                Icon(Icons.logout, color: Colors.red),
-                                SizedBox(width: 12),
-                                Text(
-                                  'Đăng xuất',
-                                  style: TextStyle(color: Colors.red),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      );
-                    },
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: Colors.grey.shade300,
+                    child: IconButton(
+                      icon: const Icon(Icons.account_circle, size: 20),
+                      padding: EdgeInsets.zero,
+                      onPressed: () {
+                        Navigator.pushNamed(context, '/account');
+                      },
+                    ),
                   ),
                 ],
               ),
@@ -703,70 +793,198 @@ class _InboxScreenState extends State<InboxScreen> {
       ),
       body: Column(
         children: [
-          // Page Title Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.shade300, width: 1),
-              ),
-            ),
-            child: Text(
-              _getPageTitle(_currentPage),
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-          ),
-          // Page Content
-          Expanded(
-            child: Consumer<EmailService>(
-              builder: (context, emailService, child) {
-                if (emailService.isLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
-
-                if (emailService.error != null) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline,
-                          size: 64,
-                          color: Colors.grey.shade400,
+          // Advanced Search Panel
+          if (_showAdvancedSearch)
+            Container(
+              color: Colors.grey.shade50,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    // From field
+                    SizedBox(
+                      width: 85,
+                      height: 45,
+                      child: TextField(
+                        controller: _fromController,
+                        decoration: InputDecoration(
+                          labelText: 'Từ',
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 8),
+                          labelStyle: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600),
                         ),
-                        const SizedBox(height: 16),
-                        Text(
-                          'Đã xảy ra lỗi',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.grey.shade600,
+                        style: const TextStyle(fontSize: 13),
+                        onChanged: (value) => _performAdvancedSearch(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // To field
+                    SizedBox(
+                      width: 85,
+                      height: 45,
+                      child: TextField(
+                        controller: _toController,
+                        decoration: InputDecoration(
+                          labelText: 'Đến',
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 8),
+                          labelStyle: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                        style: const TextStyle(fontSize: 13),
+                        onChanged: (value) => _performAdvancedSearch(),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Label dropdown
+                    SizedBox(
+                      width: 90,
+                      height: 55,
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedLabel,
+                        decoration: InputDecoration(
+                          labelText: 'Nhãn',
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 8),
+                          labelStyle: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                        style:
+                            const TextStyle(fontSize: 13, color: Colors.black),
+                        isExpanded: true,
+                        items: [
+                          const DropdownMenuItem(
+                              value: null,
+                              child: Text('Tất cả',
+                                  style: TextStyle(fontSize: 13))),
+                          const DropdownMenuItem(
+                              value: 'Công việc',
+                              child: Text('Công việc',
+                                  style: TextStyle(fontSize: 13))),
+                          const DropdownMenuItem(
+                              value: 'Cá nhân',
+                              child: Text('Cá nhân',
+                                  style: TextStyle(fontSize: 13))),
+                          const DropdownMenuItem(
+                              value: 'Quan trọng',
+                              child: Text('Quan trọng',
+                                  style: TextStyle(fontSize: 13))),
+                          const DropdownMenuItem(
+                              value: 'Thư nháp',
+                              child: Text('Thư nháp',
+                                  style: TextStyle(fontSize: 13))),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedLabel = value;
+                          });
+                          _performAdvancedSearch();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // Time filter dropdown
+                    SizedBox(
+                      width: 85,
+                      height: 55,
+                      child: DropdownButtonFormField<String>(
+                        value: _selectedTimeFilter,
+                        decoration: InputDecoration(
+                          labelText: 'Thời gian',
+                          border: const OutlineInputBorder(),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 8),
+                          labelStyle: TextStyle(
+                              fontSize: 12, color: Colors.grey.shade600),
+                        ),
+                        style:
+                            const TextStyle(fontSize: 13, color: Colors.black),
+                        isExpanded: true,
+                        items: [
+                          const DropdownMenuItem(
+                              value: 'Mọi lúc',
+                              child: Text('Mọi lúc',
+                                  style: TextStyle(fontSize: 13))),
+                          const DropdownMenuItem(
+                              value: 'Hơn 1 tuần trước',
+                              child: Text('Hơn 1 tuần',
+                                  style: TextStyle(fontSize: 13))),
+                          const DropdownMenuItem(
+                              value: 'Hơn 1 tháng trước',
+                              child: Text('Hơn 1 tháng',
+                                  style: TextStyle(fontSize: 13))),
+                          const DropdownMenuItem(
+                              value: 'Hơn 1 năm trước',
+                              child: Text('Hơn 1 năm',
+                                  style: TextStyle(fontSize: 13))),
+                        ],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedTimeFilter = value;
+                          });
+                          _performAdvancedSearch();
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+
+                    // Action buttons
+                    Row(
+                      children: [
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.clear, size: 18),
+                            onPressed: _clearAdvancedSearch,
+                            tooltip: 'Xóa bộ lọc',
+                            padding: EdgeInsets.zero,
                           ),
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          emailService.error!,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey.shade500,
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 36,
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(18),
+                          ),
+                          child: IconButton(
+                            icon: const Icon(Icons.keyboard_arrow_up, size: 18),
+                            onPressed: () {
+                              setState(() {
+                                _showAdvancedSearch = false;
+                              });
+                            },
+                            tooltip: 'Ẩn',
+                            padding: EdgeInsets.zero,
                           ),
                         ),
                       ],
                     ),
-                  );
-                }
-
-                return _buildPageContent();
-              },
+                  ],
+                ),
+              ),
             ),
-          ),
+
+          // Email content
+          Expanded(child: _buildPageContent()),
         ],
       ),
       floatingActionButton: FloatingActionButton(

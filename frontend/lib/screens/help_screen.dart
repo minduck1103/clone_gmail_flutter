@@ -353,15 +353,15 @@ class _HelpScreenState extends State<HelpScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
                 Icon(
                   Icons.support_agent,
                   color: Colors.red,
                   size: 28,
                 ),
-                const SizedBox(width: 12),
-                const Text(
+                SizedBox(width: 12),
+                Text(
                   'Cần thêm trợ giúp?',
                   style: TextStyle(
                     fontSize: 18,

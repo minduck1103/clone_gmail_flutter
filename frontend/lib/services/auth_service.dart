@@ -25,7 +25,7 @@ class AuthService extends ChangeNotifier {
       await prefs.setString('token', response['token']);
       await ApiService.getToken();
       final savedToken = prefs.getString('token');
-      print('Token in SharedPreferences: \\${savedToken}');
+      print('Token in SharedPreferences: \\$savedToken');
       _user = User.fromJson(response['user']);
       notifyListeners();
       return true;

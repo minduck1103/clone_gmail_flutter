@@ -339,7 +339,7 @@ class _ContactsScreenState extends State<ContactsScreen> with SingleTickerProvid
         return ListTile(
           leading: CircleAvatar(
             backgroundColor: Colors.red.shade100,
-            child: Icon(
+            child: const Icon(
               Icons.group,
               color: Colors.red,
             ),

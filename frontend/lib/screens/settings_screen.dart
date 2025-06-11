@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../services/auth_service.dart';
+import '../widgets/image_viewer.dart';
+import '../widgets/image_viewer.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -292,18 +294,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           child: Row(
             children: [
-              CircleAvatar(
-                radius: 24,
-                backgroundColor: Colors.red.shade100,
-                backgroundImage:
-                    user?.avatar != null ? NetworkImage(user!.avatar!) : null,
-                child: user?.avatar == null
-                    ? Icon(
-                        Icons.person,
-                        color: Colors.red,
-                        size: 24,
-                      )
-                    : null,
+              GestureDetector(
+                onTap: () {
+                  if (user?.avatar != null && user!.avatar!.isNotEmpty) {
+                    ImageViewer.show(
+                      context,
+                      user.avatar!,
+                      heroTag: 'settings_avatar',
+                    );
+                  }
+                },
+                child: Hero(
+                  tag: 'settings_avatar',
+                  child: CircleAvatar(
+                    radius: 24,
+                    backgroundColor: Colors.red.shade100,
+                    backgroundImage: user?.avatar != null
+                        ? NetworkImage(user!.avatar!)
+                        : null,
+                    child: user?.avatar == null
+                        ? Icon(
+                            Icons.person,
+                            color: Colors.red,
+                            size: 24,
+                          )
+                        : null,
+                  ),
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
